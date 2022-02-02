@@ -17,31 +17,48 @@ export function activate(context: vscode.ExtensionContext) {
 		// The code you place here will be executed every time your command is executed
 
 		// Gather credentials
-		const url = 'https://webhook.site/5f01ca7c-abc4-4192-94b2-d450abc405ac';
-		const apiKey = 'f00'; // API key from environment variable. Should have Recipient Validation rights
+		// const url = 'https://d3cd08471b2bc414c7dde46299a05d2e.m.pipedream.net';
+		//const url = 'https://webhook.site/5f01ca7c-abc4-4192-94b2-d450abc405ac';
+		const url = 'https://sparkpostpresales.emailcms.net/api/v1/eds/check';
 
-		// Build the form data for the API call
-		var FormData = require('form-data');
-		var fs = require('fs');
-		var formData = new FormData();
-		formData.append('my_file', fs.createReadStream('/Users/stuck/node/taxitest/CHANGELOG.md'));
+		const x_apiKey = process.env.X_API_KEY;
+		const x_keyID = process.env.X_KEY_ID;
 
-		axios({
-			method: 'post',
-			url: url,
-			data: formData,
-			headers: {
-				'Accept': 'application/json',
-				'Authorization': apiKey,
-			}
-		})
-			.then((response) => {
-				console.log(response.statusText, response.data);
-			}, (error) => {
-				console.log(error);
-			});
+		// Get the current text document
+		const doc = vscode.window.activeTextEditor;
+		if (doc == undefined) {
+			vscode.window.showInformationMessage('No active document, skipping Taxi for Email validation.');
+			return
+		} else {
+			console.log('Taxi for Email: Preparing %d lines for validation', doc!.document.lineCount);
+			const fileName = doc!.document.fileName;
+			const docText = doc!.document.getText();
 
-		vscode.window.showInformationMessage('Hello World from the Taxi VS Code extension');
+			// Build the form data for the API call
+
+			var FormData = require('form-data');
+			var fs = require('fs');
+			var formData = new FormData();
+			formData.append(fileName, docText);
+			var fh = formData.getHeaders() // see https://masteringjs.io/tutorials/axios/form-data
+			fh['Accept'] = 'application/json';
+			fh['X-KEY-ID'] = x_keyID;
+			fh['X-API-KEY'] = x_apiKey;
+
+			axios({
+				method: 'post',
+				url: url,
+				data: formData,
+				headers: fh,
+			})
+				.then(response => {
+					console.log(response.statusText, response.data);
+				})
+				.catch(error => {
+					console.log(error.response.status, error.response.data);
+				});
+			vscode.window.showInformationMessage('Hello World from the Taxi VS Code extension');
+		}
 	});
 
 	context.subscriptions.push(disposable);

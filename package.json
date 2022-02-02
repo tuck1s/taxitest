@@ -19,7 +19,17 @@
 				"command": "taxitest.validateEDS",
 				"title": "Taxi for Email - validate Email Design System syntax"
 			}
-		]
+		],
+		"configuration": {
+			"title": "Taxi for Email",
+			"properties": {
+				"taxi.url": {
+					"type": "string",
+					"default": false,
+					"description": "A thing"
+				}
+			}
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
