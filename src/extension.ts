@@ -18,7 +18,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// Gather credentials
 		// const url = 'https://d3cd08471b2bc414c7dde46299a05d2e.m.pipedream.net';
-		//const url = 'https://webhook.site/5f01ca7c-abc4-4192-94b2-d450abc405ac';
+		// const url = 'https://webhook.site/5f01ca7c-abc4-4192-94b2-d450abc405ac';
 		const url = 'https://sparkpostpresales.emailcms.net/api/v1/eds/check';
 
 		const x_apiKey = process.env.X_API_KEY;
@@ -34,13 +34,17 @@ export function activate(context: vscode.ExtensionContext) {
 			const fileName = doc!.document.fileName;
 			const docText = doc!.document.getText();
 
+			const docStream = Buffer.from(docText);
 			// Build the form data for the API call
+			// see https://masteringjs.io/tutorials/axios/form-data for why getHeaders() is needed
+			// see https://stackoverflow.com/questions/63938473/how-to-create-a-file-from-string-and-send-it-via-formdata for why we need
+			//     to convert the current document into a Buffer, so that it gets added to the request as a file type
 
 			var FormData = require('form-data');
 			var fs = require('fs');
 			var formData = new FormData();
-			formData.append(fileName, docText);
-			var fh = formData.getHeaders() // see https://masteringjs.io/tutorials/axios/form-data
+			formData.append('html', docStream, { filename: fileName });
+			var fh = formData.getHeaders()
 			fh['Accept'] = 'application/json';
 			fh['X-KEY-ID'] = x_keyID;
 			fh['X-API-KEY'] = x_apiKey;
@@ -48,8 +52,8 @@ export function activate(context: vscode.ExtensionContext) {
 			axios({
 				method: 'post',
 				url: url,
-				data: formData,
 				headers: fh,
+				data: formData,
 			})
 				.then(response => {
 					console.log(response.statusText, response.data);

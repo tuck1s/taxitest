@@ -17,8 +17,8 @@
 			],
 			"preLaunchTask": "${defaultBuildTask}",
 			"env": {
-				"X_API_KEY": "m+t52wyreTwMKT27g2HYiZJN91utOYas",
-				"X_KEY_ID": "ID_TTlzsjL1FN+Jnh0TmDdQK3nC"
+				"X_API_KEY": "m+t52wyrjTwMKT27g2HYiZJN91utOYas",
+				"X_KEY_ID": "ID_TTlzsjL1FN+Jnh0TmDdQK3nC",
 			},
 		},
 		{
