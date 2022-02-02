@@ -1,7 +1,7 @@
 {
 	"name": "taxitest",
 	"displayName": "taxitest",
-	"description": "A small test of Taxi for Email API",
+	"description": "Use the Taxi for Email API to validate Email Design System syntax",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.63.0"
@@ -23,10 +23,21 @@
 		"configuration": {
 			"title": "Taxi for Email",
 			"properties": {
-				"taxi.url": {
+				"taxi.uri": {
 					"type": "string",
-					"default": false,
-					"description": "A thing"
+					"format": "uri",
+					"default": "https://myaccount.emailcms.net",
+					"description": "Specifies your account URI including your account subdomain. You can find this in the browser address bar when you are logged in to your account."
+				},
+				"taxi.apiKey": {
+					"type": "string",
+					"default": "abcdef",
+					"description": "Specifies an API Key from your account. When you are logged in to your account, create a key under Integrations / API Keys / Add new. Record this value safely."
+				},
+				"taxi.keyId": {
+					"type": "string",
+					"default": "ID_xyzzyabcd",
+					"description": "Specifies an API Key ID from your account. This is visible as you add a new key. Existing key IDs can be seen under Integrations / API Keys / Edit API Key."
 				}
 			}
 		}
