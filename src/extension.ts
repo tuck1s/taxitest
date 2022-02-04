@@ -23,10 +23,6 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('taxitest.validateEDS', () => {
 		// The code you place here will be executed every time your command is executed
 
-		let rng = new vscode.Range(0, 0, 0, 1); // TODO
-		let diag = new vscode.Diagnostic(rng, 'stuff happens', vscode.DiagnosticSeverity.Warning);
-		dcoll.set(vscode.Uri.parse('https://example.com'), [diag, diag]);
-
 		// Gather credentials
 		const cfg = vscode.workspace.getConfiguration();
 		const uri = cfg.get('taxi.uri');
@@ -63,12 +59,27 @@ export function activate(context: vscode.ExtensionContext) {
 			data: formData,
 		})
 			.then(response => {
-				console.log(response.statusText, response.data);
+				if (response.status === 200) {
+					// FIXME: this just generates a single fake warning for now
+					let rng = new vscode.Range(5, 5, 5, 6);
+					let diag = new vscode.Diagnostic(rng, response.statusText, vscode.DiagnosticSeverity.Warning);
+					diag.source = 'taxi';
+					diag.code = 999;
+					dcoll.set(doc!.document.uri, [diag]);
+				}
+				else {
+					// Unexpected response
+					const strUnexpected = 'Taxi for Email: ' + response.status.toString() + ' - ' + response.statusText;
+					console.log(strUnexpected);
+					vscode.window.showErrorMessage(strUnexpected);
+				}
 			})
 			.catch(error => {
-				console.log(error.response.status, error.response.data);
+				// API has returned an error
+				const strError = 'Taxi for Email: ' + error.response.status.toString() + ' - ' + error.response.statusText;
+				console.log(strError);
+				vscode.window.showErrorMessage(strError);
 			});
-		// vscode.window.showInformationMessage('Hello World from the Taxi VS Code extension');
 
 	});
 

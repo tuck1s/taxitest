@@ -4,7 +4,7 @@
 	"description": "Validate Email Design System syntax",
 	"version": "0.0.1",
 	"publisher": "Steve Tuck, SparkPost",
-	"icon": "images/taxiforemail-white-on-blue.png",
+	"icon": "https://github.com/tuck1s/taxitest/blob/master/images/taxiforemail-white-on-blue.png",
 	"engines": {
 		"vscode": "^1.63.0"
 	},
