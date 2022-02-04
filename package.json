@@ -1,13 +1,15 @@
 {
 	"name": "taxitest",
-	"displayName": "taxitest",
-	"description": "Use the Taxi for Email API to validate Email Design System syntax",
+	"displayName": "Taxi for Email validator",
+	"description": "Validate Email Design System syntax",
 	"version": "0.0.1",
+	"publisher": "Steve Tuck, SparkPost",
+	"icon": "images/taxiforemail-white-on-blue.png",
 	"engines": {
 		"vscode": "^1.63.0"
 	},
 	"categories": [
-		"Other"
+		"Linters"
 	],
 	"activationEvents": [
 		"onCommand:taxitest.validateEDS"
@@ -20,27 +22,35 @@
 				"title": "Taxi for Email - validate Email Design System syntax"
 			}
 		],
-		"configuration": {
-			"title": "Taxi for Email",
-			"properties": {
-				"taxi.uri": {
-					"type": "string",
-					"format": "uri",
-					"default": "https://myaccount.emailcms.net",
-					"description": "Specifies your account URI including your account subdomain. You can find this in the browser address bar when you are logged in to your account."
-				},
-				"taxi.apiKey": {
-					"type": "string",
-					"default": "abcdef",
-					"description": "Specifies an API Key from your account. When you are logged in to your account, create a key under Integrations / API Keys / Add new. Record this value safely."
-				},
-				"taxi.keyId": {
-					"type": "string",
-					"default": "ID_xyzzyabcd",
-					"description": "Specifies an API Key ID from your account. This is visible as you add a new key. Existing key IDs can be seen under Integrations / API Keys / Edit API Key."
+		"configuration": [
+			{
+				"type": "object",
+				"title": "Taxi for Email",
+				"properties": {
+					"taxi.uri": {
+						"order": 1,
+						"type": "string",
+						"format": "uri",
+						"default": "https://myaccount.emailcms.net",
+						"description": "Enter your account URI including your account subdomain. You can find this in the browser address bar when you are logged in to your account."
+					},
+					"taxi.apiKey": {
+						"order": 2,
+						"type": "string",
+						"default": "abcdef",
+						"minLength": "1",
+						"description": "Enter an API Key from your account. When you are logged in to your account, create a key under Integrations / API Keys / Add new. Record this value safely."
+					},
+					"taxi.keyId": {
+						"order": 3,
+						"type": "string",
+						"default": "ID_xyzzyabcd",
+						"minLength": "1",
+						"description": "Enter an API Key ID from your account. This is visible as you add a new key. Existing key IDs can be seen under Integrations / API Keys / Edit API Key."
+					}
 				}
 			}
-		}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
