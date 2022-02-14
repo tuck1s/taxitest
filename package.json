@@ -6,7 +6,7 @@
 	"publisher": "Steve Tuck, SparkPost",
 	"icon": "https://github.com/tuck1s/taxitest/blob/master/images/taxiforemail-white-on-blue.png",
 	"engines": {
-		"vscode": "^1.63.0"
+		"vscode": "^1.64.0"
 	},
 	"categories": [
 		"Linters"
