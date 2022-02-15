@@ -14,10 +14,11 @@ export function activate(context: vscode.ExtensionContext) {
 	// This line of code will only be executed once when your extension is activated
 	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');
 
-	// Make a diagnostics collection output
+	// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
+	// clearing previous results as the tool is subsequently.
+	//
 	// See https://code.visualstudio.com/api/references/vscode-api#Diagnostic
 	// 	 Severity levels are: Error, Warning, Informational, Hint
-
 	let dcoll = vscode.languages.createDiagnosticCollection('taxi');
 
 	// The command has been defined in the package.json file
@@ -28,12 +29,14 @@ export function activate(context: vscode.ExtensionContext) {
 
 		const startTime = new Date().getTime();
 
+
 		// Gather credentials
 		const cfg = vscode.workspace.getConfiguration();
 		const uri = cfg.get('taxi.uri');
 		const url = uri + '/api/v1/eds/check';
 		const apiKey = cfg.get('taxi.apiKey');
 		const keyID = cfg.get('taxi.keyId');
+		const showSummary = cfg.get('taxi.showSummary');
 
 		// Get the current text document
 		const doc = vscode.window.activeTextEditor;
@@ -41,7 +44,7 @@ export function activate(context: vscode.ExtensionContext) {
 			vscode.window.showInformationMessage('No active document, skipping Taxi for Email validation.');
 			return;
 		}
-		console.log('Taxi for Email: sending %d lines for validation', doc!.document.lineCount);
+		console.log(`Taxi for Email: sending ${doc!.document.lineCount} lines for validation`);
 		const fileName = doc!.document.fileName;
 		const docStream = Buffer.from(doc!.document.getText());
 
@@ -65,75 +68,18 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 			.then(response => {
 				if (response.status === 200) {
-					dcoll.clear();
-					// Cast the response data into the expected type structure
-					type ResultDetails = {
-						type: string,
-						message: string,
-						details: string | string[],
-					};
-					type Result = {
-						// eslint-disable-next-line @typescript-eslint/naming-convention
-						total_errors: number,
-						// eslint-disable-next-line @typescript-eslint/naming-convention
-						total_warnings: number,
-						errors: ResultDetails[],
-						warnings: ResultDetails[],
-					};
-					const result: Result = response.data;
-
-					// Iterate through errors and warnings together, as each object has a type attribute.
-					let diags: vscode.Diagnostic[] = [];
-					for (let e of Object.values(Object.assign(result.errors, result.warnings))) {
-						var details: string;
-						if (typeof e.details === 'string') {
-							details = e.details;
-						} else {
-							details = e.details.join(',');
-						}
-
-						// Look for a line number in the details string. If not known, default to first line of file (=0) chars (0,0)->(0,100)
-						const regex = /at line ([0-9]+)/;
-						const lineNumberMatch = details.match(regex);
-						var rng = new vscode.Range(0, 0, 0, 100);
-						if (lineNumberMatch !== null) {
-							const lineNum = parseInt(lineNumberMatch[1]) - 1; // adjust to be zero-based for VS Code range references
-							rng = new vscode.Range(lineNum, 0, lineNum, 100);
-						}
-
-						// The type string gives the severity - default to "information" unless ERROR or WARN
-						var sev = vscode.DiagnosticSeverity.Information;
-						switch (e.type.toUpperCase()) {
-							case 'WARN':
-								sev = vscode.DiagnosticSeverity.Warning;
-								break;
-
-							case 'ERROR':
-								sev = vscode.DiagnosticSeverity.Error;
-								break;
-						}
-						let diag = new vscode.Diagnostic(rng, details, sev);
-						diag.source = 'taxi';
-						diags.push(diag);
-					}
-
-					// Add a final informational diagnostic, showing that the check ran successfully
-					const lastLine = doc!.document.lineCount;
-					const duration = (new Date().getTime() - startTime) / 1000;
-					const summary = `Taxi for Email validation: ${lastLine} lines checked, ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
-					diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
-					dcoll.set(doc!.document.uri, diags);
+					displayDiagnostics(dcoll, response.data, doc, startTime, !!showSummary);
 				}
 				else {
 					// Unexpected response
-					const strUnexpected = 'Taxi for Email: ' + response.status.toString() + ' - ' + response.statusText;
+					const strUnexpected = `Taxi for Email: ${response.status}  - ${response.statusText}`;
 					console.log(strUnexpected);
 					vscode.window.showErrorMessage(strUnexpected);
 				}
 			})
 			.catch(error => {
 				// API has returned an error
-				const strError = 'Taxi for Email: ' + error.response.status.toString() + ' - ' + error.response.statusText;
+				const strError = `Taxi for Email: ${error.response.status} - ${error.response.statusText} `;
 				console.log(strError);
 				vscode.window.showErrorMessage(strError);
 			});
@@ -145,3 +91,68 @@ export function activate(context: vscode.ExtensionContext) {
 
 // this method is called when your extension is deactivated
 export function deactivate() { }
+
+
+// Expected type structure of API response data
+type ResultDetails = {
+	type: string,
+	message: string,
+	details: string | string[],
+};
+
+type Result = {
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	total_errors: number,
+	// eslint-disable-next-line @typescript-eslint/naming-convention
+	total_warnings: number,
+	errors: ResultDetails[],
+	warnings: ResultDetails[],
+};
+
+function displayDiagnostics(dcoll: vscode.DiagnosticCollection, result: Result, doc: vscode.TextEditor, startTime: number, showSummary: boolean) {
+	// Iterate through errors and warnings together, as each object has a type attribute.
+	let diags: vscode.Diagnostic[] = [];
+	for (let e of Object.values(Object.assign(result.errors, result.warnings))) {
+		var details: string;
+		if (typeof e.details === 'string') {
+			details = e.details;
+		} else {
+			details = e.details.join(',');
+		}
+
+		// Look for a line number in the details string. If not known, default to first line of file (=0) chars (0,0)->(0,100)
+		const regex = /at line ([0-9]+)/;
+		const lineNumberMatch = details.match(regex);
+		var rng = new vscode.Range(0, 0, 0, 100);
+		if (lineNumberMatch !== null) {
+			const lineNum = parseInt(lineNumberMatch[1]) - 1; // adjust to be zero-based for VS Code range references
+			rng = new vscode.Range(lineNum, 0, lineNum, 100);
+		}
+
+		// The type string gives the severity - default to "information" unless ERROR or WARN
+		var sev = vscode.DiagnosticSeverity.Information;
+		switch (e.type.toUpperCase()) {
+			case 'WARN':
+				sev = vscode.DiagnosticSeverity.Warning;
+				break;
+
+			case 'ERROR':
+				sev = vscode.DiagnosticSeverity.Error;
+				break;
+		}
+		let diag = new vscode.Diagnostic(rng, details, sev);
+		diag.source = 'taxi';
+		diags.push(diag);
+	}
+
+	// If enabled, show a final informational diagnostic, showing summary information of warnings, errors, warnings, and run time.
+	if (showSummary) {
+		const lastLine = doc!.document.lineCount;
+		const duration = (new Date().getTime() - startTime) / 1000;
+		const summary = `Taxi for Email validation: ${lastLine} lines checked, ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
+		diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
+	}
+	// Remove previous diagnostics for this specific file, then update them
+	dcoll.delete(doc!.document.uri);
+	dcoll.set(doc!.document.uri, diags);
+}

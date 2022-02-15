@@ -47,6 +47,12 @@
 						"default": "ID_xyzzyabcd",
 						"minLength": "1",
 						"description": "Enter an API Key ID from your account. This is visible as you add a new key. Existing key IDs can be seen under Integrations / API Keys / Edit API Key."
+					},
+					"taxi.showSummary": {
+						"order": 4,
+						"type": "boolean",
+						"default": false,
+						"description": "Enables informational output of lines checked, errors, warnings, and run time"
 					}
 				}
 			}
