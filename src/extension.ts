@@ -107,7 +107,7 @@ export function activate(context: vscode.ExtensionContext) {
 					const lastLine = doc!.document.lineCount;
 					const duration = (new Date().getTime() - startTime) / 1000;
 					const summary = `Taxi for Email validation: ${lastLine} lines checked, ${nErrors} errors, ${nWarnings} warnings, in ${duration} seconds.`;
-					diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information);
+					diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
 					dcoll.set(doc!.document.uri, diags);
 				}
 				else {
