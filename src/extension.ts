@@ -5,6 +5,7 @@ import axios from 'axios';
 import * as FormData from 'form-data';
 import { ConsoleReporter } from '@vscode/test-electron';
 import { start } from 'repl';
+import internal = require('stream');
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -65,13 +66,26 @@ export function activate(context: vscode.ExtensionContext) {
 			.then(response => {
 				if (response.status === 200) {
 					dcoll.clear();
-					const nErrors = response.data.total_errors;
-					const nWarnings = response.data.total_warnings;
+					// Cast the response data into the expected type structure
+					type ResultDetails = {
+						type: string,
+						message: string,
+						details: string | string[],
+					};
+					type Result = {
+						// eslint-disable-next-line @typescript-eslint/naming-convention
+						total_errors: number,
+						// eslint-disable-next-line @typescript-eslint/naming-convention
+						total_warnings: number,
+						errors: ResultDetails[],
+						warnings: ResultDetails[],
+					};
+					const result: Result = response.data;
 
-					let diags: vscode.Diagnostic[] = [];
 					// Iterate through errors and warnings together, as each object has a type attribute.
-					for (let e of Object.values(Object.assign(response.data.errors, response.data.warnings))) {
-						var details = '';
+					let diags: vscode.Diagnostic[] = [];
+					for (let e of Object.values(Object.assign(result.errors, result.warnings))) {
+						var details: string;
 						if (typeof e.details === 'string') {
 							details = e.details;
 						} else {
@@ -106,7 +120,7 @@ export function activate(context: vscode.ExtensionContext) {
 					// Add a final informational diagnostic, showing that the check ran successfully
 					const lastLine = doc!.document.lineCount;
 					const duration = (new Date().getTime() - startTime) / 1000;
-					const summary = `Taxi for Email validation: ${lastLine} lines checked, ${nErrors} errors, ${nWarnings} warnings, in ${duration} seconds.`;
+					const summary = `Taxi for Email validation: ${lastLine} lines checked, ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
 					diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
 					dcoll.set(doc!.document.uri, diags);
 				}
