@@ -17,8 +17,8 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			total_errors: 0,
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			total_warnings: 0,
-			errors: [],
-			warnings: [],
+			errors: {}, // API returns empty object, rather than zero-length array
+			warnings: {},
 		};
 
 		const doc = await vscode.workspace.openTextDocument({

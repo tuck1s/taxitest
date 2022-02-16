@@ -105,15 +105,17 @@ export type Result = {
 	total_errors: number,
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	total_warnings: number,
-	errors: ResultDetails[],
-	warnings: ResultDetails[],
+	errors: Object,
+	warnings: Object,
 };
 
 export function displayDiagnostics(result: Result, doc: vscode.TextDocument, startTime: number, showSummary: boolean): vscode.Diagnostic[] {
-	// Iterate through errors and warnings together, as each object has a type attribute.
+	// Iterate through errors and warnings together, as each object has a type attribute
+	// concat results into a single array, for ease of iteration
 	let diags: vscode.Diagnostic[] = [];
-	const combined: ResultDetails[] = result.errors.concat(result.warnings);
-	for (const e of Object.values(combined)) {
+	let combined: ResultDetails[] = Object.values(result.errors);
+	combined = combined.concat(Object.values(result.warnings));
+	for (const e of combined) {
 		var details: string;
 		if (typeof e.details === 'string') {
 			details = e.details;
