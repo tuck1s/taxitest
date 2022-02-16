@@ -3,9 +3,7 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
 import * as FormData from 'form-data';
-import { ConsoleReporter } from '@vscode/test-electron';
-import { start } from 'repl';
-import internal = require('stream');
+
 
 // this method is called when your extension is activated
 // your extension is activated the very first time the command is executed
@@ -68,7 +66,9 @@ export function activate(context: vscode.ExtensionContext) {
 		})
 			.then(response => {
 				if (response.status === 200) {
-					displayDiagnostics(dcoll, response.data, doc, startTime, !!showSummary);
+					const diags = displayDiagnostics(response.data, doc!.document, startTime, !!showSummary);
+					dcoll.delete(doc!.document.uri);
+					dcoll.set(doc!.document.uri, diags);
 				}
 				else {
 					// Unexpected response
@@ -79,7 +79,7 @@ export function activate(context: vscode.ExtensionContext) {
 			})
 			.catch(error => {
 				// API has returned an error
-				const strError = `Taxi for Email: ${error.response.status} - ${error.response.statusText} `;
+				const strError = `Taxi for Email: ${error.response.status} - ${error.response.statusText}`;
 				console.log(strError);
 				vscode.window.showErrorMessage(strError);
 			});
@@ -100,7 +100,7 @@ type ResultDetails = {
 	details: string | string[],
 };
 
-type Result = {
+export type Result = {
 	// eslint-disable-next-line @typescript-eslint/naming-convention
 	total_errors: number,
 	// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -109,10 +109,11 @@ type Result = {
 	warnings: ResultDetails[],
 };
 
-function displayDiagnostics(dcoll: vscode.DiagnosticCollection, result: Result, doc: vscode.TextEditor, startTime: number, showSummary: boolean) {
+export function displayDiagnostics(result: Result, doc: vscode.TextDocument, startTime: number, showSummary: boolean): vscode.Diagnostic[] {
 	// Iterate through errors and warnings together, as each object has a type attribute.
 	let diags: vscode.Diagnostic[] = [];
-	for (let e of Object.values(Object.assign(result.errors, result.warnings))) {
+	const combined: ResultDetails[] = result.errors.concat(result.warnings);
+	for (const e of Object.values(combined)) {
 		var details: string;
 		if (typeof e.details === 'string') {
 			details = e.details;
@@ -140,19 +141,19 @@ function displayDiagnostics(dcoll: vscode.DiagnosticCollection, result: Result, 
 				sev = vscode.DiagnosticSeverity.Error;
 				break;
 		}
-		let diag = new vscode.Diagnostic(rng, details, sev);
+		let diag = new vscode.Diagnostic(rng, e.message + ': ' + details, sev);
 		diag.source = 'taxi';
 		diags.push(diag);
 	}
 
 	// If enabled, show a final informational diagnostic, showing summary information of warnings, errors, warnings, and run time.
 	if (showSummary) {
-		const lastLine = doc!.document.lineCount;
+		const lastLine = doc.lineCount;
 		const duration = (new Date().getTime() - startTime) / 1000;
 		const summary = `Taxi for Email validation: ${lastLine} lines checked, ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
 		diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
 	}
 	// Remove previous diagnostics for this specific file, then update them
-	dcoll.delete(doc!.document.uri);
-	dcoll.set(doc!.document.uri, diags);
+
+	return diags;
 }
