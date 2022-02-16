@@ -1,5 +1,7 @@
 # taxitest README
 
+![Taxi for Email](https://github.com/github/docs/actions/workflows/vscode.yml/badge.svg)
+
 This is the README for your extension "taxitest". After writing up a brief description, we recommend including the following sections.
 
 ## Features
