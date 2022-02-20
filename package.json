@@ -1,10 +1,14 @@
 {
-	"name": "taxitest",
+	"name": "taxi-for-email-validator",
 	"displayName": "Taxi for Email validator",
 	"description": "Validate Email Design System syntax",
 	"version": "0.0.1",
-	"publisher": "Steve Tuck, SparkPost",
-	"icon": "https://github.com/tuck1s/taxitest/blob/master/images/taxiforemail-white-on-blue.png",
+	"publisher": "SparkPost",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/tuck1s/taxitest.git"
+	},
+	"icon": "images/taxiforemail-white-on-blue.png",
 	"engines": {
 		"vscode": "^1.64.0"
 	},
