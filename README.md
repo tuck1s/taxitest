@@ -18,7 +18,7 @@ Start validation from the [Command Palette](https://code.visualstudio.com/docs/g
 For ease of running without going through the Command Palette each time, you can also assign the tool to a shortcut [key binding](https://code.visualstudio.com/docs/getstarted/keybindings) of your choice.
 ### Viewing the output
 
-Results are displayed in the "Problems" window. You may need to bring this to the foreground on your "View" menu. Another way is to click on the status bar area that shows a summary count of errors, warnings, and informational messages.
+Results are displayed in the "Problems" window. You may need to bring this to the foreground on your "View" menu. Another way is to click on the bottom status bar area that shows a summary count of errors, warnings, and informational messages.
 
 ![Taxi problems display](images/taxi-problems-display.png)
 
@@ -27,9 +27,9 @@ As with other language syntax checkers, the icon indicates if Taxi for Email con
 
 |Icon|Meaning|
 --|--
-ⓧ| Error
-⚠️| Warning
-ⓘ| Informational
+<span style="color:red">ⓧ</span> | Error
+<span style="color:orange">⚠️</span> | Warning
+<span style="color:dodgerblue">ⓘ</span>| Informational
 
 Note the Informational line the end, showing how lines of code checked, error and warning counts, and the time taken to validate. This can be enabled/disabled in [Extension Settings](#extension-settings).
 ## Requirements - API Key
