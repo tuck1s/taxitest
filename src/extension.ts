@@ -25,8 +25,7 @@ export function activate(context: vscode.ExtensionContext) {
 	let disposable = vscode.commands.registerCommand('taxitest.validateEDS', () => {
 		// The code you place here will be executed every time your command is executed
 
-		const startTime = new Date().getTime();
-
+		const startTime = new Date();
 
 		// Gather credentials
 		const cfg = vscode.workspace.getConfiguration();
@@ -92,8 +91,8 @@ export function activate(context: vscode.ExtensionContext) {
 // this method is called when your extension is deactivated
 export function deactivate() { }
 
-
 // Expected type structure of API response data
+
 type ResultDetails = {
 	type: string,
 	message: string,
@@ -109,53 +108,61 @@ export type Result = {
 	warnings: Object,
 };
 
-export function displayDiagnostics(result: Result, doc: vscode.TextDocument, startTime: number, showSummary: boolean): vscode.Diagnostic[] {
+
+export function makeDiagnostic(message: string, details: string, type: string): vscode.Diagnostic {
+	// Look for a line number in the details string. If not known, default to first line of file (=0) chars (0,0)->(0,100)
+	const regex = /at line ([0-9]+)/;
+	const lineNumberMatch = details.match(regex);
+	var rng = new vscode.Range(0, 0, 0, 100);
+	if (lineNumberMatch !== null) {
+		const lineNum = parseInt(lineNumberMatch[1]) - 1; // adjust to be zero-based for VS Code range references
+		rng = new vscode.Range(lineNum, 0, lineNum, 100);
+	}
+	// The type string gives the severity - default to "information" unless ERROR or WARN
+	var sev = vscode.DiagnosticSeverity.Information;
+	switch (type.toUpperCase()) {
+		case 'WARN':
+			sev = vscode.DiagnosticSeverity.Warning;
+			break;
+
+		case 'ERROR':
+			sev = vscode.DiagnosticSeverity.Error;
+			break;
+	}
+	let diag = new vscode.Diagnostic(rng, message + ': ' + details, sev);
+	diag.source = 'taxi';
+	return diag;
+}
+
+
+export function displayDiagnostics(result: Result, doc: vscode.TextDocument, startTime: Date, showSummary: boolean): vscode.Diagnostic[] {
 	// Iterate through errors and warnings together, as each object has a type attribute
 	// concat results into a single array, for ease of iteration
 	let diags: vscode.Diagnostic[] = [];
-	let combined: ResultDetails[] = Object.values(result.errors);
-	combined = combined.concat(Object.values(result.warnings));
+	// parse errors first, then warnings, as this is the most useful order of presentation
+	let combined: ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
 	for (const e of combined) {
-		var details: string;
 		if (typeof e.details === 'string') {
-			details = e.details;
-		} else {
-			details = e.details.join(',');
+			const diag = makeDiagnostic(e.message, e.details, e.type);
+			diags.push(diag);
+		} else if (typeof e.details === 'object') {
+			for (const f of e.details) {
+				const diag = makeDiagnostic(e.message, f, e.type);
+				diags.push(diag);
+			}
 		}
-
-		// Look for a line number in the details string. If not known, default to first line of file (=0) chars (0,0)->(0,100)
-		const regex = /at line ([0-9]+)/;
-		const lineNumberMatch = details.match(regex);
-		var rng = new vscode.Range(0, 0, 0, 100);
-		if (lineNumberMatch !== null) {
-			const lineNum = parseInt(lineNumberMatch[1]) - 1; // adjust to be zero-based for VS Code range references
-			rng = new vscode.Range(lineNum, 0, lineNum, 100);
+		else {
+			console.log(`Unexpected type ${typeof e.details} found in ${e}`);
 		}
-
-		// The type string gives the severity - default to "information" unless ERROR or WARN
-		var sev = vscode.DiagnosticSeverity.Information;
-		switch (e.type.toUpperCase()) {
-			case 'WARN':
-				sev = vscode.DiagnosticSeverity.Warning;
-				break;
-
-			case 'ERROR':
-				sev = vscode.DiagnosticSeverity.Error;
-				break;
-		}
-		let diag = new vscode.Diagnostic(rng, e.message + ': ' + details, sev);
-		diag.source = 'taxi';
-		diags.push(diag);
 	}
-
 	// If enabled, show a final informational diagnostic, showing summary information of warnings, errors, warnings, and run time.
 	if (showSummary) {
 		const lastLine = doc.lineCount;
-		const duration = (new Date().getTime() - startTime) / 1000;
-		const summary = `Taxi for Email validation: ${lastLine} lines checked, ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
+		const endTime = new Date();
+		const endTimeStr = endTime.toLocaleTimeString([], { hour12: false });
+		const duration = (endTime.getTime() - startTime.getTime()) / 1000;
+		const summary = `At ${endTimeStr}, Taxi for Email validated ${lastLine} lines, found ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
 		diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
 	}
-	// Remove previous diagnostics for this specific file, then update them
-
 	return diags;
 }

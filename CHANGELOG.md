@@ -1,9 +1,13 @@
 # Change Log
-
-All notable changes to the "taxitest" extension will be documented in this file.
-
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
 ## [Unreleased]
 
-- Initial release
+## [0.0.2] - 2022-02-21
+### Changed
+- Split multiple items returned into separate diagnostic lines
+### Added
+- "At .." timestamp at beginning of informational line output
+
+## [0.0.1] - 2022-02-21
+- Initial version
+
+Format following advice in ["Keep a Changelog"](http://keepachangelog.com/).

@@ -11,7 +11,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 	test('displayDiagnostics - empty, with & without summary', async () => {
 
 		let dcoll = vscode.languages.createDiagnosticCollection('taxi');
-		const startTime = new Date().getTime();
+		const startTime = new Date();
 		const result: taxi.Result = {
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			total_errors: 0,
@@ -39,7 +39,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 	test('displayDiagnostics - errors & warnings, with & without summary', async () => {
 
 		let dcoll = vscode.languages.createDiagnosticCollection('taxi');
-		const startTime = new Date().getTime();
+		const startTime = new Date();
 		const result: taxi.Result = {
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			total_errors: 1,

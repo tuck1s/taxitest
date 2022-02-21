@@ -64,6 +64,8 @@ Uri|Enter your account URI including your account subdomain. You can find this i
 ## Known Issues
 
 Line numbers are currently picked up from the text of the messages using pattern matching. If you click on a diagnostic output that has a line number, your editor view should put your cursor there. However, not all messages currently have line numbers. We're hoping to improve line-number correlations and reporting as the API develops.
-## Release Notes
-### 0.0.1
-Initial beta release for internal testing.
+
+## Releases
+See [changelog](CHANGELOG.md).
+
+This uses [semantic versioning](https://semver.org/), in step with the actual version number which is in [`package.json`](package.json).
