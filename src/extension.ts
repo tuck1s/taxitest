@@ -37,7 +37,7 @@ export function activate(context: vscode.ExtensionContext) {
 
 		// Get the current text document
 		const doc = vscode.window.activeTextEditor;
-		if (doc === undefined) {
+		if (!doc) {
 			vscode.window.showInformationMessage('No active document, skipping Taxi for Email validation.');
 			return;
 		}
@@ -82,17 +82,15 @@ export function activate(context: vscode.ExtensionContext) {
 				console.log(strError);
 				vscode.window.showErrorMessage(strError);
 			});
-
 	});
-
 	context.subscriptions.push(disposable);
 }
 
 // this method is called when your extension is deactivated
 export function deactivate() { }
 
-// Expected type structure of API response data
 
+// Expected type structure of API response data
 export type ResultDetails = {
 	type: string,
 	message: string,
@@ -111,6 +109,7 @@ export type Result = {
 
 export function makeDiagnostic(message: string, details: string, type: string): vscode.Diagnostic {
 	// Look for a line number in the details string. If not known, default to first line of file (=0) chars (0,0)->(0,100)
+	// This feature could be MUCH improved if we can get specific line numbers back from the API
 	const regex = /at line ([0-9]+)/;
 	const lineNumberMatch = details.match(regex);
 	var rng = new vscode.Range(0, 0, 0, 100);
@@ -155,7 +154,7 @@ export function displayDiagnostics(result: Result, doc: vscode.TextDocument, sta
 			console.log(`Unexpected type ${typeof e.details} found in ${e}`);
 		}
 	}
-	// If enabled, show a final informational diagnostic, showing summary information of warnings, errors, warnings, and run time.
+	// If enabled, show a final informational diagnostic, showing errors, warnings, and run-time.
 	if (showSummary) {
 		const lastLine = doc.lineCount;
 		const endTime = new Date();
