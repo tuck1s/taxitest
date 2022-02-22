@@ -93,7 +93,7 @@ export function deactivate() { }
 
 // Expected type structure of API response data
 
-type ResultDetails = {
+export type ResultDetails = {
 	type: string,
 	message: string,
 	details: string | string[],

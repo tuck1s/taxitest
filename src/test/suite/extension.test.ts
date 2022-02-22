@@ -5,6 +5,25 @@ import * as assert from 'assert';
 import * as vscode from 'vscode';
 import * as taxi from '../../extension';
 
+
+// Calculated expected length of an API result, with/without summary
+function expectedLength(result: taxi.Result, summary: boolean): number {
+	let combined: taxi.ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
+	var l = 0;
+	for (const e of combined) {
+		if (typeof e.details === 'string') {
+			l += 1;
+		} else if (typeof e.details === 'object') {
+			l += e.details.length;
+		}
+		else {
+			assert.fail(`Unexpected type ${typeof e.details} found in ${e}`);
+		}
+	}
+	return l + (summary ? 1 : 0); // allow for 1 extra if there's a summary
+}
+
+
 suite('Taxi for Email Validation Extension Test Suite', () => {
 	vscode.window.showInformationMessage('Start all tests.');
 
@@ -26,11 +45,13 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		});
 		const ed = await vscode.window.showTextDocument(doc);
 
-		const diags = taxi.displayDiagnostics(result, doc, startTime, false);
-		assert.strictEqual(diags.length, result.total_errors + result.total_warnings + 0);
+		var summary = false;
+		const diags = taxi.displayDiagnostics(result, doc, startTime, summary);
+		assert.strictEqual(diags.length, expectedLength(result, summary));
 
-		const diags2 = taxi.displayDiagnostics(result, doc, startTime, true);
-		assert.strictEqual(diags2.length, result.total_errors + result.total_warnings + 1);
+		summary = true;
+		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary);
+		assert.strictEqual(diags2.length, expectedLength(result, summary));
 
 		// See https://stackoverflow.com/questions/44733028/how-to-close-textdocument-in-vs-code
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
@@ -74,11 +95,13 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		});
 		const ed = await vscode.window.showTextDocument(doc);
 
-		const diags = taxi.displayDiagnostics(result, doc, startTime, false);
-		assert.strictEqual(diags.length, result.total_errors + result.total_warnings + 0);
+		var summary = false;
+		const diags = taxi.displayDiagnostics(result, doc, startTime, summary);
+		assert.strictEqual(diags.length, expectedLength(result, summary));
 
-		const diags2 = taxi.displayDiagnostics(result, doc, startTime, true);
-		assert.strictEqual(diags2.length, result.total_errors + result.total_warnings + 1);
+		summary = true;
+		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary);
+		assert.strictEqual(diags2.length, expectedLength(result, summary));
 
 		// See https://stackoverflow.com/questions/44733028/how-to-close-textdocument-in-vs-code
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
