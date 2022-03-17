@@ -73,7 +73,9 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 					details: [
 						'One problem',
 						'split across multiple lines',
-					]
+					],
+					element: 'foo',
+					line: 1,
 				}
 			],
 			warnings: [
@@ -81,11 +83,14 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 					type: 'WARN',
 					message: 'Some minor problem',
 					details: 'A warning',
+					element: 'foo',
+					line: 1,
 				},
 				{
 					type: 'WARN',
 					message: 'Another minor problem',
-					details: 'Another warning',
+					details: 'Another warning but with no element or line number',
+					// this time without any element or line number
 				}
 			],
 		};

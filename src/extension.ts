@@ -95,6 +95,8 @@ export type ResultDetails = {
 	type: string,
 	message: string,
 	details: string | string[],
+	element: string,
+	line: number,
 };
 
 export type Result = {
@@ -106,20 +108,20 @@ export type Result = {
 	warnings: Object,
 };
 
+export function sanitizeLinebreaks(s: string): string {
+	return s.replace(/[\r\n]+/g, ' ');
+}
 
-export function makeDiagnostic(message: string, details: string, type: string): vscode.Diagnostic {
-	// Look for a line number in the details string. If not known, default to first line of file (=0) chars (0,0)->(0,100)
-	// This feature could be MUCH improved if we can get specific line numbers back from the API
-	const regex = /at line ([0-9]+)/;
-	const lineNumberMatch = details.match(regex);
-	var rng = new vscode.Range(0, 0, 0, 100);
-	if (lineNumberMatch !== null) {
-		const lineNum = parseInt(lineNumberMatch[1]) - 1; // adjust to be zero-based for VS Code range references
-		rng = new vscode.Range(lineNum, 0, lineNum, 100);
+export function makeDiagnostic(d: ResultDetails, doc: vscode.TextDocument): vscode.Diagnostic {
+	// Get line number directly from the result details
+	var rng = new vscode.Range(0, 0, 0, 100); // default
+	if (d.line) {
+		// now find out actual length of this line in the doc. VS code lines start from 0 up.
+		rng = doc.lineAt(d.line - 1).range;
 	}
 	// The type string gives the severity - default to "information" unless ERROR or WARN
 	var sev = vscode.DiagnosticSeverity.Information;
-	switch (type.toUpperCase()) {
+	switch (d.type.toUpperCase()) {
 		case 'WARN':
 			sev = vscode.DiagnosticSeverity.Warning;
 			break;
@@ -128,7 +130,17 @@ export function makeDiagnostic(message: string, details: string, type: string): 
 			sev = vscode.DiagnosticSeverity.Error;
 			break;
 	}
-	let diag = new vscode.Diagnostic(rng, message + ': ' + details, sev);
+	var detailStr: string = '';
+	if (typeof d.details === 'string') {
+		detailStr = d.details;
+	} else {
+		console.error('Error - d.details is not a simple string');
+	}
+	let diagString = sanitizeLinebreaks(d.message) + ': ' + sanitizeLinebreaks(detailStr);
+	if (d.element) {
+		diagString += '\n' + d.element;
+	}
+	let diag = new vscode.Diagnostic(rng, diagString, sev);
 	diag.source = 'taxi';
 	return diag;
 }
@@ -142,11 +154,14 @@ export function displayDiagnostics(result: Result, doc: vscode.TextDocument, sta
 	let combined: ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
 	for (const e of combined) {
 		if (typeof e.details === 'string') {
-			const diag = makeDiagnostic(e.message, e.details, e.type);
+			const diag = makeDiagnostic(e, doc);
 			diags.push(diag);
 		} else if (typeof e.details === 'object') {
+			// TODO: check if new API still generates these outputs - if not, we can simplify the data model and get rid of the loop
 			for (const f of e.details) {
-				const diag = makeDiagnostic(e.message, f, e.type);
+				let thisDetail = { ...e }; // UGH have to force shallow cloning otherwise it's a reference which overwrites object e
+				thisDetail.details = f;
+				const diag = makeDiagnostic(thisDetail, doc);
 				diags.push(diag);
 			}
 		}

@@ -2,7 +2,7 @@
 	"name": "taxi-for-email-validator",
 	"displayName": "Taxi for Email validator",
 	"description": "Validate Email Design System syntax",
-	"version": "0.0.2",
+	"version": "0.0.3",
 	"publisher": "SparkPost",
 	"repository": {
 		"type": "git",
