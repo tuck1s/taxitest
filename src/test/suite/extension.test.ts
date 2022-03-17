@@ -13,10 +13,7 @@ function expectedLength(result: taxi.Result, summary: boolean): number {
 	for (const e of combined) {
 		if (typeof e.details === 'string') {
 			l += 1;
-		} else if (typeof e.details === 'object') {
-			l += e.details.length;
-		}
-		else {
+		} else {
 			assert.fail(`Unexpected type ${typeof e.details} found in ${e}`);
 		}
 	}
@@ -70,10 +67,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 				{
 					type: 'ERROR',
 					message: 'Huge errors found',
-					details: [
-						'One problem',
-						'split across multiple lines',
-					],
+					details: 'One problem', // API no longer returns details as an array
 					element: 'foo',
 					line: 1,
 				}

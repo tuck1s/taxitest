@@ -94,7 +94,7 @@ export function deactivate() { }
 export type ResultDetails = {
 	type: string,
 	message: string,
-	details: string | string[],
+	details: string,
 	element: string,
 	line: number,
 };
@@ -130,13 +130,7 @@ export function makeDiagnostic(d: ResultDetails, doc: vscode.TextDocument): vsco
 			sev = vscode.DiagnosticSeverity.Error;
 			break;
 	}
-	var detailStr: string = '';
-	if (typeof d.details === 'string') {
-		detailStr = d.details;
-	} else {
-		console.error('Error - d.details is not a simple string');
-	}
-	let diagString = sanitizeLinebreaks(d.message) + ': ' + sanitizeLinebreaks(detailStr);
+	let diagString = sanitizeLinebreaks(d.message) + ': ' + sanitizeLinebreaks(d.details);
 	if (d.element) {
 		diagString += '\n' + d.element;
 	}
@@ -153,21 +147,8 @@ export function displayDiagnostics(result: Result, doc: vscode.TextDocument, sta
 	// parse errors first, then warnings, as this is the most useful order of presentation
 	let combined: ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
 	for (const e of combined) {
-		if (typeof e.details === 'string') {
-			const diag = makeDiagnostic(e, doc);
-			diags.push(diag);
-		} else if (typeof e.details === 'object') {
-			// TODO: check if new API still generates these outputs - if not, we can simplify the data model and get rid of the loop
-			for (const f of e.details) {
-				let thisDetail = { ...e }; // UGH have to force shallow cloning otherwise it's a reference which overwrites object e
-				thisDetail.details = f;
-				const diag = makeDiagnostic(thisDetail, doc);
-				diags.push(diag);
-			}
-		}
-		else {
-			console.log(`Unexpected type ${typeof e.details} found in ${e}`);
-		}
+		const diag = makeDiagnostic(e, doc);
+		diags.push(diag);
 	}
 	// If enabled, show a final informational diagnostic, showing errors, warnings, and run-time.
 	if (showSummary) {

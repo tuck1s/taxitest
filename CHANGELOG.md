@@ -4,6 +4,9 @@ The release version number is in [`package.json`](package.json).
 
 ## [Unreleased]
 
+## [0.0.4] - 2022-03-17
+- Simplified code, as API now always returns `details` as a string, not array.
+
 ## [0.0.3] - 2022-03-17
 - Process line number information returned from the API.
 - Restore .vscode files lost from repo, as these are needed for debug.
