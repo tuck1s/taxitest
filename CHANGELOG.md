@@ -4,6 +4,9 @@ The release version number is in [`package.json`](package.json).
 
 ## [Unreleased]
 
+## [0.1.0] - 2022-06-09
+- Links to Taxi for Email docs in README. First published release.
+
 ## [0.0.4] - 2022-03-17
 - Simplified code, as API now always returns `details` as a string, not array.
 

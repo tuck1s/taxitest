@@ -3,9 +3,12 @@
 [![.github/workflows/vscode.yml](https://github.com/tuck1s/taxitest/actions/workflows/vscode.yml/badge.svg)](https://github.com/tuck1s/taxitest/actions/workflows/vscode.yml)
 
 This Visual Studio Code extension enables you to validate Taxi for Email design system files directly, without having to first upload them.
+
+## Pre-requisites
+A [Taxi for Email](https://taxiforemail.com/) account, with privileges to create an API key.
 ## Features
 
-The new Taxi for email API endpoint is used by this extension. You'll need an API key as described in [Extension Settings](#extension-settings).
+The [Taxi for email API](http://get.taxi.support/en/collections/3384114-taxi-for-email-api) is used by this extension - follow [these instructions](http://get.taxi.support/en/articles/6062003-taxi-for-email-api) to obtain your API key.
 
 Validation can take a few seconds on large files (~ 5 .. 10 seconds for a 4000 line file), and you need an Internet connection.  For these reasons, unlike some language plugins, it doesn't run all the time in the background.
 
@@ -39,7 +42,7 @@ To obtain an API key and key ID - in your Taxi for Email account, navigate to "I
 ![Taxi API Key - Add New](images/taxi-api-key-add-new.png)
 
 
-## Extension
+## Extension settings
 You can access these via VS Code Preferences, then type `taxi` into the search bar.
 
 |Parameter|Meaning|
@@ -61,10 +64,9 @@ Uri|Enter your account URI including your account subdomain. You can find this i
     ![Taxi auth error](images/taxi-no-active-doc.png)
 
 
-## Known Issues
+## Contributing
 
-Line numbers are currently picked up from the text of the messages using pattern matching. If you click on a diagnostic output that has a line number, your editor view should put your cursor there. However, not all messages currently have line numbers. We're hoping to improve line-number correlations and reporting as the API develops.
-
+This is a volunteer open-source project and is not directly supported by the Taxi for Email support service. If you find an issue, please open an issue in Github, or (even better) - contribute a pull request.
 ## Releases
 See [changelog](CHANGELOG.md).
 
