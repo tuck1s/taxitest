@@ -3,7 +3,7 @@
 	"displayName": "Taxi for Email validator",
 	"description": "Validate Email Design System syntax",
 	"version": "0.1.0",
-	"publisher": "Steve Tuck",
+	"publisher": "tuck1s",
 	"repository": {
 		"type": "git",
 		"url": "https://github.com/tuck1s/taxitest.git"
