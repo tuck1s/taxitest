@@ -1,8 +1,8 @@
 {
-	"name": "taxi-for-email-validator",
-	"displayName": "Taxi for Email validator",
-	"description": "Validate Email Design System syntax",
-	"version": "0.1.0",
+	"name": "taxi-for-email-validate-upload",
+	"displayName": "Taxi for Email EDS validate and upload",
+	"description": "Validate Email Design System (EDS) syntax and upload EDS files",
+	"version": "0.1.1",
 	"publisher": "tuck1s",
 	"repository": {
 		"type": "git",
@@ -16,7 +16,7 @@
 		"Linters"
 	],
 	"activationEvents": [
-		"onCommand:taxitest.validateEDS"
+		"onStartupFinished"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -24,6 +24,10 @@
 			{
 				"command": "taxitest.validateEDS",
 				"title": "Taxi for Email - validate Email Design System syntax"
+			},
+			{
+				"command": "taxitest.setEDS",
+				"title": "Taxi for Email - set Email Design System ID for this workspace"
 			}
 		],
 		"configuration": [
@@ -57,6 +61,12 @@
 						"type": "boolean",
 						"default": false,
 						"description": "Enables informational output of lines checked, errors, warnings, and run time"
+					},
+					"taxi.designSystemId": { 
+						"order": 5,
+						"type": "string",
+						"default": "",
+						"description": "The design system id relating to the current workspace"
 					}
 				}
 			}

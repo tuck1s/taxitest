@@ -5,15 +5,50 @@ import axios from 'axios';
 import * as FormData from 'form-data';
 
 
+function updateEDSBar(bar: vscode.StatusBarItem, s: string) {
+	if(!s) {
+		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+		s = 'Click to set';
+	}
+	else {
+		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.');
+	}
+	bar.text = 'EDS: ' + s;
+}
+
 // this method is called when your extension is activated
-// your extension is activated the very first time the command is executed
+// (after startup) so that status bar is shown
 export function activate(context: vscode.ExtensionContext) {
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
 	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');
 
+	// Experiment with workspace settings and status bar
+	const cfg = vscode.workspace.getConfiguration('taxi');
+	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
+	bar.name = 'Taxi for Email Design System';
+	bar.tooltip = 'Taxi for Email Design System';
+	bar.command = 'taxitest.setEDS';
+	updateEDSBar(bar, String(cfg.get('designSystemId')));
+	bar.show();
+
+	let disposable2 = vscode.commands.registerCommand('taxitest.setEDS', () => {
+		let options: vscode.InputBoxOptions = {
+			prompt: "Email Design System ID (numeric): ",
+			placeHolder: "e.g 123456"
+		};
+		
+		vscode.window.showInputBox(options).then(value => {
+			if (value) {
+				cfg.update('designSystemId', value, vscode.ConfigurationTarget.Workspace);
+				console.log('EDS ID = ' + value);
+				updateEDSBar(bar, value);
+			}
+		});
+	});
+	context.subscriptions.push(disposable2);
+
 	// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
-	// clearing previous results as the tool is subsequently.
+	// clearing previous results as the tool is subsequently run.
 	//
 	// See https://code.visualstudio.com/api/references/vscode-api#Diagnostic
 	// 	 Severity levels are: Error, Warning, Informational, Hint
@@ -28,12 +63,11 @@ export function activate(context: vscode.ExtensionContext) {
 		const startTime = new Date();
 
 		// Gather credentials
-		const cfg = vscode.workspace.getConfiguration();
-		const uri = cfg.get('taxi.uri');
+		const uri = cfg.get('uri');
 		const url = uri + '/api/v1/eds/check';
-		const apiKey = cfg.get('taxi.apiKey');
-		const keyID = cfg.get('taxi.keyId');
-		const showSummary = cfg.get('taxi.showSummary');
+		const apiKey = cfg.get('apiKey');
+		const keyID = cfg.get('keyId');
+		const showSummary = cfg.get('showSummary');
 
 		// Get the current text document
 		const doc = vscode.window.activeTextEditor;
