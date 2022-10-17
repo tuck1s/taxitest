@@ -4,54 +4,93 @@ import * as vscode from 'vscode';
 import axios from 'axios';
 import * as FormData from 'form-data';
 
-
-function updateEDSBar(bar: vscode.StatusBarItem, s: string) {
-	if(!s) {
-		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-		s = 'Click to set';
-	}
-	else {
-		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.');
-	}
-	bar.text = 'EDS: ' + s;
-}
-
-// this method is called when your extension is activated
-// (after startup) so that status bar is shown
-export function activate(context: vscode.ExtensionContext) {
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');
-
-	// Experiment with workspace settings and status bar
-	const cfg = vscode.workspace.getConfiguration('taxi');
+// Status bar Input item, allowing Taxi Email Design System to be edited
+// As the Taxi API cannot currently return the text description of an EDS, we hold
+// a text description in the local workspace. This should be eventually removed when
+// the API supports description texts.
+function createStatusBarInput(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext) {
 	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
 	bar.name = 'Taxi for Email Design System';
 	bar.tooltip = 'Taxi for Email Design System';
 	bar.command = 'taxitest.setEDS';
-	updateEDSBar(bar, String(cfg.get('designSystemId')));
+	updateEDSBar(bar, cfg.get('designSystemId'), cfg.get('designSystemDescr'));
 	bar.show();
 
-	let disposable2 = vscode.commands.registerCommand('taxitest.setEDS', () => {
+	// The command has been defined in the package.json file
+	// Now provide the implementation of the command with registerCommand
+	// The commandId parameter must match the command field in package.json
+	let disposable = vscode.commands.registerCommand('taxitest.setEDS', () => {
 		let options: vscode.InputBoxOptions = {
-			prompt: "Email Design System ID (numeric): ",
-			placeHolder: "e.g 123456"
+			title: "Set Email Design System identifier for this workspace",
+			prompt: "Numeric ID; optional description",
+			placeHolder: "123456; my new project",
+			validateInput(value) {
+				var [id, descr] = splitBySemiColon(value);
+				return isNumber(id) ? null : 'Must be 0 .. 9';
+			},
 		};
 		
 		vscode.window.showInputBox(options).then(value => {
 			if (value) {
-				cfg.update('designSystemId', value, vscode.ConfigurationTarget.Workspace);
-				console.log('EDS ID = ' + value);
-				updateEDSBar(bar, value);
+				var [id, descr] = splitBySemiColon(value);
+				//TODO: fetch vars back via thenable
+				console.log(`Setting EDS ID = ${id}, descr = ${descr}`);
+				cfg.update('designSystemId', id, vscode.ConfigurationTarget.Workspace).then( () => {
+					cfg.update('designSystemDescr', descr, vscode.ConfigurationTarget.Workspace).then( () => {
+						updateEDSBar(bar, id, descr);
+					});
+				});
 			}
 		});
 	});
-	context.subscriptions.push(disposable2);
+	context.subscriptions.push(disposable);
+}
 
-	// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
-	// clearing previous results as the tool is subsequently run.
-	//
-	// See https://code.visualstudio.com/api/references/vscode-api#Diagnostic
-	// 	 Severity levels are: Error, Warning, Informational, Hint
+
+function updateEDSBar(bar: vscode.StatusBarItem, id?: string, descr?: string) {
+	if(!id) {
+		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+		bar.text = 'EDS: Click to set';
+	}
+	else {
+		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
+		if(descr) {
+			bar.text = 'EDS: ' + id + ' ; ' + descr; // add optional description
+		} else {
+			bar.text = 'EDS: ' + id;
+		}
+	}
+}
+
+function isNumber(value: string | number): boolean
+{
+   return ((value !== null) &&
+           (value !== '') &&
+           !isNaN(Number(value.toString())));
+}
+
+// Split a string that may contain a semicolon
+function splitBySemiColon(value: string) {
+	var id = '', descr = '';
+	if (value.includes(';')) {
+		let a = value.split(';', 2); 
+		id = a[0];
+		descr = a[1];
+	} else {
+		id = value;
+	}
+	return [id, descr];
+}
+
+//-----------------------------------------------------------------------------
+
+// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
+// clearing previous results as the tool is subsequently run.
+//
+// See https://code.visualstudio.com/api/references/vscode-api#Diagnostic
+// 	 Severity levels are: Error, Warning, Informational, Hint
+function createValidationAction(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext) {
+
 	let dcoll = vscode.languages.createDiagnosticCollection('taxi');
 
 	// The command has been defined in the package.json file
@@ -120,9 +159,6 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable);
 }
 
-// this method is called when your extension is deactivated
-export function deactivate() { }
-
 
 // Expected type structure of API response data
 export type ResultDetails = {
@@ -173,7 +209,6 @@ export function makeDiagnostic(d: ResultDetails, doc: vscode.TextDocument): vsco
 	return diag;
 }
 
-
 export function displayDiagnostics(result: Result, doc: vscode.TextDocument, startTime: Date, showSummary: boolean): vscode.Diagnostic[] {
 	// Iterate through errors and warnings together, as each object has a type attribute
 	// concat results into a single array, for ease of iteration
@@ -195,3 +230,20 @@ export function displayDiagnostics(result: Result, doc: vscode.TextDocument, sta
 	}
 	return diags;
 }
+
+//-----------------------------------------------------------------------------
+// this method is called when your extension is activated
+// (after startup) so that status bar input field is shown, and the various commands are active.
+export function activate(context: vscode.ExtensionContext) {
+	// Use the console to output diagnostic information (console.log) and errors (console.error)
+	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');
+
+	// Experiment with workspace settings and status bar
+	const cfg = vscode.workspace.getConfiguration('taxi');
+	createStatusBarInput(cfg, context);
+	createValidationAction(cfg, context);
+}
+
+// this method is called when your extension is deactivated
+export function deactivate() { }
+
