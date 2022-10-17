@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 import axios from 'axios';
 import * as FormData from 'form-data';
 
-// Status bar Input item, allowing Taxi Email Design System to be edited
+// Status bar Input item, allowing a selectable Taxi Email Design System ID.
 // As the Taxi API cannot currently return the text description of an EDS, we hold
 // a text description in the local workspace. This should be eventually removed when
 // the API supports description texts.
@@ -83,82 +83,78 @@ function splitBySemiColon(value: string) {
 }
 
 //-----------------------------------------------------------------------------
-
-// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
-// clearing previous results as the tool is subsequently run.
-//
-// See https://code.visualstudio.com/api/references/vscode-api#Diagnostic
-// 	 Severity levels are: Error, Warning, Informational, Hint
+// Extension command for validating an EDS and displaying the diagnostic output
 function createValidationAction(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext) {
-
+	// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
+	// clearing previous results as the tool is subsequently run.
+	//
+	// See https://code.visualstudio.com/api/references/vscode-api#Diagnostic
+	// 	 Severity levels are: Error, Warning, Informational, Hint
 	let dcoll = vscode.languages.createDiagnosticCollection('taxi');
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('taxitest.validateEDS', () => {
-		// The code you place here will be executed every time your command is executed
-
-		const startTime = new Date();
-
-		// Gather credentials
-		const uri = cfg.get('uri');
-		const url = uri + '/api/v1/eds/check';
-		const apiKey = cfg.get('apiKey');
-		const keyID = cfg.get('keyId');
-		const showSummary = cfg.get('showSummary');
-
-		// Get the current text document
-		const doc = vscode.window.activeTextEditor;
-		if (!doc) {
-			vscode.window.showInformationMessage('No active document, skipping Taxi for Email validation.');
-			return;
-		}
-		console.log(`Taxi for Email: sending ${doc!.document.lineCount} lines for validation`);
-		const fileName = doc!.document.fileName;
-		const docStream = Buffer.from(doc!.document.getText());
-
-		// Build the form data for the API call
-		// see https://masteringjs.io/tutorials/axios/form-data for why getHeaders() is needed
-		// see https://stackoverflow.com/questions/63938473/how-to-create-a-file-from-string-and-send-it-via-formdata for why we need
-		//     to convert the current document into a Buffer, so that it gets added to the request as a file, rather than text.
-
-		var formData = new FormData();
-		formData.append('html', docStream, { filename: fileName });
-		var fh = formData.getHeaders();
-		fh['Accept'] = 'application/json';
-		fh['X-KEY-ID'] = keyID;
-		fh['X-API-KEY'] = apiKey;
-
-		axios({
-			method: 'post',
-			url: url,
-			headers: fh,
-			data: formData,
-		})
-			.then(response => {
-				if (response.status === 200) {
-					const diags = displayDiagnostics(response.data, doc!.document, startTime, !!showSummary);
-					dcoll.delete(doc!.document.uri);
-					dcoll.set(doc!.document.uri, diags);
-				}
-				else {
-					// Unexpected response
-					const strUnexpected = `Taxi for Email: ${response.status}  - ${response.statusText}`;
-					console.log(strUnexpected);
-					vscode.window.showErrorMessage(strUnexpected);
-				}
-			})
-			.catch(error => {
-				// API has returned an error
-				const strError = `Taxi for Email: ${error.response.status} - ${error.response.statusText}`;
-				console.log(strError);
-				vscode.window.showErrorMessage(strError);
-			});
-	});
+	let disposable = vscode.commands.registerCommand('taxitest.validateEDS', () => validateEmailDesignSystem(cfg, dcoll));
 	context.subscriptions.push(disposable);
 }
 
+function validateEmailDesignSystem(cfg: vscode.WorkspaceConfiguration, dcoll: vscode.DiagnosticCollection) {
+	const startTime = new Date();
+
+	// Gather credentials
+	const uri = cfg.get('uri');
+	const apiKey = cfg.get('apiKey');
+	const keyID = cfg.get('keyId');
+	const showSummary = cfg.get('showSummary');
+
+	// Get the current text document
+	const doc = vscode.window.activeTextEditor;
+	if (!doc) {
+		vscode.window.showInformationMessage('No active document, skipping Taxi for Email validation.');
+		return;
+	}
+	console.log(`Taxi for Email: sending ${doc!.document.lineCount} lines for validation`);
+	const fileName = doc!.document.fileName;
+	const docStream = Buffer.from(doc!.document.getText());
+
+	// Build the form data for the API call
+	// see https://masteringjs.io/tutorials/axios/form-data for why getHeaders() is needed
+	// see https://stackoverflow.com/questions/63938473/how-to-create-a-file-from-string-and-send-it-via-formdata for why we need
+	//     to convert the current document into a Buffer, so that it gets added to the request as a file, rather than text.
+
+	var formData = new FormData();
+	formData.append('html', docStream, { filename: fileName });
+	var fh = formData.getHeaders();
+	fh['Accept'] = 'application/json';
+	fh['X-KEY-ID'] = keyID;
+	fh['X-API-KEY'] = apiKey;
+
+	axios({
+		method: 'post',
+		url: uri + '/api/v1/eds/check',
+		headers: fh,
+		data: formData,
+	}).then(response => {
+		if (response.status === 200) {
+			const diags = displayDiagnostics(response.data, doc!.document, startTime, !!showSummary);
+			dcoll.delete(doc!.document.uri);
+			dcoll.set(doc!.document.uri, diags);
+		}
+		else {
+			// Unexpected response
+			const strUnexpected = `Taxi for Email: ${response.status}  - ${response.statusText}`;
+			console.log(strUnexpected);
+			vscode.window.showErrorMessage(strUnexpected);
+		}
+	})
+	.catch(error => {
+		// API has returned an error
+		const strError = `Taxi for Email: ${error.response.status} - ${error.response.statusText}`;
+		console.log(strError);
+		vscode.window.showErrorMessage(strError);
+	});
+}
 
 // Expected type structure of API response data
 export type ResultDetails = {
@@ -230,6 +226,8 @@ export function displayDiagnostics(result: Result, doc: vscode.TextDocument, sta
 	}
 	return diags;
 }
+
+//-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 // this method is called when your extension is activated
