@@ -43,11 +43,11 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		const ed = await vscode.window.showTextDocument(doc);
 
 		var summary = false;
-		const diags = taxi.displayDiagnostics(result, doc, startTime, summary);
+		const diags = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags.length, expectedLength(result, summary));
 
 		summary = true;
-		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary);
+		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags2.length, expectedLength(result, summary));
 
 		// See https://stackoverflow.com/questions/44733028/how-to-close-textdocument-in-vs-code
@@ -95,11 +95,11 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		const ed = await vscode.window.showTextDocument(doc);
 
 		var summary = false;
-		const diags = taxi.displayDiagnostics(result, doc, startTime, summary);
+		const diags = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags.length, expectedLength(result, summary));
 
 		summary = true;
-		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary);
+		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags2.length, expectedLength(result, summary));
 
 		// See https://stackoverflow.com/questions/44733028/how-to-close-textdocument-in-vs-code

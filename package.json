@@ -28,7 +28,12 @@
 			{
 				"command": "taxitest.setEDS",
 				"title": "Taxi for Email - set Email Design System ID for this workspace"
+			},
+			{
+				"command": "taxitest.updateEDS",
+				"title": "Taxi for Email - update Email Design System"
 			}
+
 		],
 		"configuration": [
 			{
@@ -64,7 +69,7 @@
 					},
 					"taxi.designSystemId": { 
 						"order": 5,
-						"type": "string",
+						"type": "integer",
 						"default": "",
 						"description": "The design system id relating to the current workspace"
 					},

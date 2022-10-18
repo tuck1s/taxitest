@@ -6,13 +6,23 @@ import * as FormData from 'form-data';
 
 // this method is called when your extension is activated (after startup)
 export function activate(context: vscode.ExtensionContext) {
+	// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
+	// clearing previous results as the tool is subsequently run.
+	//
+	// See https://code.visualstudio.com/api/references/vscode-api#Diagnostic
+	// 	 Severity levels are: Error, Warning, Informational, Hint
+	let dcoll = vscode.languages.createDiagnosticCollection('taxi');
+	
+	// Create the extension UI elements and commands
+	const cfg = vscode.workspace.getConfiguration('taxi');
+
+	// Create the status bar element
+	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
+	createStatusBarInput(cfg, context, bar);
+	createValidationAction(cfg, context, dcoll, bar);
+	createUpdateEDSAction(cfg, context, dcoll, bar);
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');
-
-	// Experiment with workspace settings and status bar
-	const cfg = vscode.workspace.getConfiguration('taxi');
-	createStatusBarInput(cfg, context);
-	createValidationAction(cfg, context);
 }
 
 // this method is called when your extension is deactivated
@@ -21,14 +31,7 @@ export function deactivate() { }
 //-----------------------------------------------------------------------------
 // Extension command for validating an EDS and displaying the diagnostic output
 //-----------------------------------------------------------------------------
-function createValidationAction(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext) {
-	// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
-	// clearing previous results as the tool is subsequently run.
-	//
-	// See https://code.visualstudio.com/api/references/vscode-api#Diagnostic
-	// 	 Severity levels are: Error, Warning, Informational, Hint
-	let dcoll = vscode.languages.createDiagnosticCollection('taxi');
-
+function createValidationAction(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
@@ -38,13 +41,12 @@ function createValidationAction(cfg: vscode.WorkspaceConfiguration, context: vsc
 
 function validateEmailDesignSystem(cfg: vscode.WorkspaceConfiguration, dcoll: vscode.DiagnosticCollection) {
 	const startTime = new Date();
-
 	// Gather credentials
 	const uri = cfg.get('uri');
 	const apiKey = cfg.get('apiKey');
 	const keyID = cfg.get('keyId');
 	const showSummary = cfg.get('showSummary');
-
+	
 	// Get the current text document
 	const doc = vscode.window.activeTextEditor;
 	if (!doc) {
@@ -54,19 +56,19 @@ function validateEmailDesignSystem(cfg: vscode.WorkspaceConfiguration, dcoll: vs
 	console.log(`Taxi for Email: sending ${doc!.document.lineCount} lines for validation`);
 	const fileName = doc!.document.fileName;
 	const docStream = Buffer.from(doc!.document.getText());
-
+	
 	// Build the form data for the API call
 	// see https://masteringjs.io/tutorials/axios/form-data for why getHeaders() is needed
 	// see https://stackoverflow.com/questions/63938473/how-to-create-a-file-from-string-and-send-it-via-formdata for why we need
 	//     to convert the current document into a Buffer, so that it gets added to the request as a file, rather than text.
-
+	
 	var formData = new FormData();
 	formData.append('html', docStream, { filename: fileName });
 	var fh = formData.getHeaders();
 	fh['Accept'] = 'application/json';
 	fh['X-KEY-ID'] = keyID;
 	fh['X-API-KEY'] = apiKey;
-
+	
 	axios({
 		method: 'post',
 		url: uri + '/api/v1/eds/check',
@@ -74,8 +76,7 @@ function validateEmailDesignSystem(cfg: vscode.WorkspaceConfiguration, dcoll: vs
 		data: formData,
 	}).then(response => {
 		if (response.status === 200) {
-			const diags = displayDiagnostics(response.data, doc!.document, startTime, !!showSummary);
-			dcoll.delete(doc!.document.uri);
+			const diags = displayDiagnostics(response.data, doc!.document, startTime, !!showSummary, 'validated');
 			dcoll.set(doc!.document.uri, diags);
 		}
 		else {
@@ -126,12 +127,12 @@ export function makeDiagnostic(d: ResultDetails, doc: vscode.TextDocument): vsco
 	var sev = vscode.DiagnosticSeverity.Information;
 	switch (d.type.toUpperCase()) {
 		case 'WARN':
-			sev = vscode.DiagnosticSeverity.Warning;
-			break;
-
+		sev = vscode.DiagnosticSeverity.Warning;
+		break;
+		
 		case 'ERROR':
-			sev = vscode.DiagnosticSeverity.Error;
-			break;
+		sev = vscode.DiagnosticSeverity.Error;
+		break;
 	}
 	let diagString = sanitizeLinebreaks(d.message) + ': ' + sanitizeLinebreaks(d.details);
 	if (d.element) {
@@ -142,9 +143,10 @@ export function makeDiagnostic(d: ResultDetails, doc: vscode.TextDocument): vsco
 	return diag;
 }
 
-export function displayDiagnostics(result: Result, doc: vscode.TextDocument, startTime: Date, showSummary: boolean): vscode.Diagnostic[] {
+export function displayDiagnostics(result: Result, doc: vscode.TextDocument, startTime: Date, showSummary: boolean, verb: string): vscode.Diagnostic[] {
 	// Iterate through errors and warnings together, as each object has a type attribute
 	// concat results into a single array, for ease of iteration
+	// verb is a reporting nicety - e.g. "validated", "updated", "created" etc
 	let diags: vscode.Diagnostic[] = [];
 	// parse errors first, then warnings, as this is the most useful order of presentation
 	let combined: ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
@@ -158,7 +160,7 @@ export function displayDiagnostics(result: Result, doc: vscode.TextDocument, sta
 		const endTime = new Date();
 		const endTimeStr = endTime.toLocaleTimeString([], { hour12: false });
 		const duration = (endTime.getTime() - startTime.getTime()) / 1000;
-		const summary = `At ${endTimeStr}, Taxi for Email validated ${lastLine} lines, found ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
+		const summary = `At ${endTimeStr}, Taxi for Email ${verb} ${lastLine} lines, found ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
 		diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
 	}
 	return diags;
@@ -170,14 +172,13 @@ export function displayDiagnostics(result: Result, doc: vscode.TextDocument, sta
 // a text description in the local workspace. This should be eventually removed when
 // the API supports description texts.
 //-----------------------------------------------------------------------------
-function createStatusBarInput(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext) {
-	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
+function createStatusBarInput(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
 	bar.name = 'Taxi for Email Design System';
 	bar.tooltip = 'Taxi for Email Design System';
 	bar.command = 'taxitest.setEDS';
 	updateEDSBar(bar, cfg.get('designSystemId'), cfg.get('designSystemDescr'));
 	bar.show();
-
+	
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
@@ -188,9 +189,9 @@ function createStatusBarInput(cfg: vscode.WorkspaceConfiguration, context: vscod
 function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.StatusBarItem) 
 {
 	let options: vscode.InputBoxOptions = {
-		title: "Set Email Design System identifier for this workspace",
-		prompt: "Numeric ID; optional description",
-		placeHolder: "123456; my new project",
+		title: 'Set Email Design System identifier for this workspace',
+		prompt: 'Numeric ID; optional description',
+		placeHolder: '123456; my new project',
 		validateInput(value) {
 			var [id, descr] = splitBySemiColon(value);
 			return isNumber(id) ? null : 'Must be 0 .. 9';
@@ -200,9 +201,9 @@ function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.
 	vscode.window.showInputBox(options).then(value => {
 		if (value) {
 			var [id, descr] = splitBySemiColon(value);
-			//TODO: fetch vars back via thenable
-			console.log(`Setting EDS ID = ${id}, descr = ${descr}`);
-			cfg.update('designSystemId', id, vscode.ConfigurationTarget.Workspace).then( () => {
+			const idNum = parseInt(id, 10);
+			console.log(`Setting EDS ID = ${idNum}, descr = ${descr}`);
+			cfg.update('designSystemId', idNum, vscode.ConfigurationTarget.Workspace).then( () => {
 				cfg.update('designSystemDescr', descr, vscode.ConfigurationTarget.Workspace).then( () => {
 					updateEDSBar(bar, id, descr);
 				});
@@ -228,9 +229,9 @@ function updateEDSBar(bar: vscode.StatusBarItem, id?: string, descr?: string) {
 
 function isNumber(value: string | number): boolean
 {
-   return ((value !== null) &&
-           (value !== '') &&
-           !isNaN(Number(value.toString())));
+	return ((value !== null) &&
+	(value !== '') &&
+	!isNaN(Number(value.toString())));
 }
 
 // Split a string that may contain a semicolon
@@ -244,4 +245,97 @@ function splitBySemiColon(value: string) {
 		id = value;
 	}
 	return [id, descr];
+}
+
+//-----------------------------------------------------------------------------
+// Extension command to update an existing Email Design System
+//-----------------------------------------------------------------------------
+function createUpdateEDSAction(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
+	// The command has been defined in the package.json file
+	// Now provide the implementation of the command with registerCommand
+	// The commandId parameter must match the command field in package.json
+	let disposable = vscode.commands.registerCommand('taxitest.updateEDS', () => updateEmailDesignSystem(cfg, dcoll, bar));
+	context.subscriptions.push(disposable);
+}
+
+function updateEmailDesignSystem(cfg: vscode.WorkspaceConfiguration, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
+	const startTime = new Date();
+	// Gather credentials
+	const uri = cfg.get('uri');
+	const apiKey = cfg.get('apiKey');
+	const keyID = cfg.get('keyId');
+	const showSummary = cfg.get('showSummary');
+	const designSystemId = cfg.get('designSystemId');
+	// Get the current text document
+	const doc = vscode.window.activeTextEditor;
+	if (!doc) {
+		vscode.window.showInformationMessage('No active document, skipping Taxi for Email upload.');
+		return;
+	}
+	console.log(`Taxi for Email: sending ${doc!.document.lineCount} lines for upload`);
+	const fileName = doc!.document.fileName;
+	const docStream = Buffer.from(doc!.document.getText());
+	
+	// Build the form data for the API call
+	// see https://masteringjs.io/tutorials/axios/form-data for why getHeaders() is needed
+	// see https://stackoverflow.com/questions/63938473/how-to-create-a-file-from-string-and-send-it-via-formdata for why we need
+	//     to convert the current document into a Buffer, so that it gets added to the request as a file, rather than text.
+	
+	var formData = new FormData();
+	formData.append('source', docStream, { filename: fileName }); 	// Note this param is called "source" not "html"
+	formData.append('id', designSystemId);
+	formData.append('import_images', 'false');
+	formData.append('without_review', 'true');						// TODO: check if this is the most useful behaviour
+	
+	var fh = formData.getHeaders();
+	fh['Accept'] = 'application/json';
+	fh['X-KEY-ID'] = keyID;
+	fh['X-API-KEY'] = apiKey;
+
+	axios({
+		method: 'patch',
+		url: uri + '/api/v1/eds/update', // TEST 'https://webhook.site/230792c3-4980-4f0a-86b0-fedab9863870'
+		headers: fh,
+		data: formData,
+	}).then(response => {
+		if (response.status) {
+			if (response.status === 200) {
+				if(response.data) {
+					const rd = response.data;
+					console.log(`Updated ID=${rd.id}, name="${rd.name}", description="${rd.description}", created_at=${rd.created_at}, updated_at=${rd.updated_at}`);
+					if(rd.syntax_warnings) {
+						// This endpoint returns a different format to "/check", so need to make it similar enough to display
+						let result : Result = {
+							// eslint-disable-next-line @typescript-eslint/naming-convention
+							'total_warnings': Object.values(rd.syntax_warnings).length,
+							// eslint-disable-next-line @typescript-eslint/naming-convention
+							'total_errors': 0,
+							'warnings': rd.syntax_warnings,
+							'errors': {},
+						};
+						const diags = displayDiagnostics(result, doc!.document, startTime, !!showSummary, 'updated');
+						dcoll.delete(doc!.document.uri);
+						dcoll.set(doc!.document.uri, diags);		
+					}
+				}
+			}
+			else {
+				// Unexpected response
+				const strUnexpected = `Taxi for Email: ${response.status}  - ${response.statusText}`;
+				console.log(strUnexpected);
+				vscode.window.showErrorMessage(strUnexpected);
+			}
+		} else {
+			console.log(response); // more error handling
+		}
+	})
+	.catch(error => {
+		// API has returned an error
+		let strError = `Taxi for Email: ${error.response.status} - ${error.response.statusText}`;
+		if(error.response.data.message) {
+			strError += ` : ${error.response.data.message}`;
+		}
+		console.log(strError);
+		vscode.window.showErrorMessage(strError);
+	});
 }
