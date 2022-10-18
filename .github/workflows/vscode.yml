@@ -25,9 +25,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
       - name: Install Node.js
-        uses: actions/setup-node@v1
+        uses: actions/setup-node@v3
         with:
-          node-version: 14.x
+          node-version: 16
       - run: npm install
       - run: xvfb-run -a npm test
         if: runner.os == 'Linux'
