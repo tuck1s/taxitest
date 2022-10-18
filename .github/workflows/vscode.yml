@@ -7,6 +7,7 @@
 #   [1725:0216/203552.967164:ERROR:browser_main_loop.cc(1402)] Unable to open X display.
 #   The futex facility returned an unexpected error code.
 
+name: Taxi for Email
 on:
   push:
     branches: [master]
