@@ -176,7 +176,7 @@ function createStatusBarInput(cfg: vscode.WorkspaceConfiguration, context: vscod
 	bar.name = 'Taxi for Email Design System';
 	bar.tooltip = 'Taxi for Email Design System';
 	bar.command = 'taxitest.setEDS';
-	updateEDSBar(bar, cfg.get('designSystemId'), cfg.get('designSystemDescr'));
+	updateEDSBar(bar, cfg.get('designSystemId'), cfg.get('designSystemDescr'), false);
 	bar.show();
 	
 	// The command has been defined in the package.json file
@@ -205,25 +205,28 @@ function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.
 			console.log(`Setting EDS ID = ${idNum}, descr = ${descr}`);
 			cfg.update('designSystemId', idNum, vscode.ConfigurationTarget.Workspace).then( () => {
 				cfg.update('designSystemDescr', descr, vscode.ConfigurationTarget.Workspace).then( () => {
-					updateEDSBar(bar, id, descr);
+					updateEDSBar(bar, id, descr, false);
 				});
 			});
 		}
 	});
 }
 
-function updateEDSBar(bar: vscode.StatusBarItem, id?: string, descr?: string) {
-	if(!id) {
-		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-		bar.text = 'EDS: Click to set';
+function updateEDSBar(bar: vscode.StatusBarItem, id: unknown, descr: unknown, inProgress: boolean) {
+	bar.text = 'EDS: ';
+	if(id) {
+		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
+		bar.text += String(id);
+		if(descr) {
+			bar.text +=  ` ;` + String(descr);		// add optional description
+		}
 	}
 	else {
-		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
-		if(descr) {
-			bar.text = 'EDS: ' + id + ' ; ' + descr; // add optional description
-		} else {
-			bar.text = 'EDS: ' + id;
-		}
+		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+		bar.text += 'Click to set';
+	}
+	if(inProgress) {
+		bar.text += '$(sync~spin)';
 	}
 }
 
@@ -260,12 +263,17 @@ function createUpdateEDSAction(cfg: vscode.WorkspaceConfiguration, context: vsco
 
 function updateEmailDesignSystem(cfg: vscode.WorkspaceConfiguration, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
 	const startTime = new Date();
-	// Gather credentials
+	// Gather credentials and settings
 	const uri = cfg.get('uri');
 	const apiKey = cfg.get('apiKey');
 	const keyID = cfg.get('keyId');
 	const showSummary = cfg.get('showSummary');
 	const designSystemId = cfg.get('designSystemId');
+	const designSystemDescr = cfg.get('designSystemDescr');
+
+	// show "in progress" sync icon
+	updateEDSBar(bar, designSystemId, designSystemDescr, true);
+
 	// Get the current text document
 	const doc = vscode.window.activeTextEditor;
 	if (!doc) {
@@ -337,5 +345,9 @@ function updateEmailDesignSystem(cfg: vscode.WorkspaceConfiguration, dcoll: vsco
 		}
 		console.log(strError);
 		vscode.window.showErrorMessage(strError);
+	})
+	.finally( () => {
+		// remove "in progress" sync icon
+		updateEDSBar(bar, designSystemId, designSystemDescr, false);
 	});
 }
