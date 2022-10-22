@@ -115,23 +115,18 @@ function createValidationAction(cfg: vscode.WorkspaceConfiguration, context: vsc
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('taxitest.validateEDS', () => validateEmailDesignSystem(cfg, dcoll, bar));
+	let disposable = vscode.commands.registerCommand('taxitest.validateEDS', () =>
+		emailDesignSystemCall(cfg, dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html'));
 	context.subscriptions.push(disposable);
 }
 
-function validateEmailDesignSystem(cfg: vscode.WorkspaceConfiguration, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
-	emailDesignSystemCall(cfg, dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html');
-}
 function createUpdateEDSAction(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('taxitest.updateEDS', () => updateEmailDesignSystem(cfg, dcoll, bar));
+	let disposable = vscode.commands.registerCommand('taxitest.updateEDS', () =>
+		emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source'));
 	context.subscriptions.push(disposable);
-}
-
-function updateEmailDesignSystem(cfg: vscode.WorkspaceConfiguration, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
-	emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 }
 
 //-----------------------------------------------------------------------------
@@ -190,18 +185,22 @@ function emailDesignSystemCall(cfg: vscode.WorkspaceConfiguration, dcoll: vscode
 					let result: Result;
 					if (verb === 'validate') {
 						result = response.data; // Validate call returns in this specific format
-					} else {
+					} else if (verb === 'update') {
 						const rd = response.data;
-						console.log(`Updated ID=${rd.id}, name="${rd.name}", description="${rd.description}", created_at=${rd.created_at}, updated_at=${rd.updated_at}`);
+						console.log(`Updated ID=${rd.id}, name="${rd.name}", description="${rd.description}"`);
+						console.log(`created_at=${rd.created_at}, updated_at=${rd.updated_at}`);
 						// make it in same form as the Validation call
 						result = {
 							// eslint-disable-next-line @typescript-eslint/naming-convention
-							'total_warnings': Object.values(rd.syntax_warnings).length,
-							// eslint-disable-next-line @typescript-eslint/naming-convention
 							'total_errors': 0,
-							'warnings': rd.syntax_warnings,
+							// eslint-disable-next-line @typescript-eslint/naming-convention
+							'total_warnings': Object.values(rd.syntax_warnings).length,
 							'errors': {},
+							'warnings': rd.syntax_warnings,
 						};
+					} else {
+						console.log(`Unexpected action ${verb}`);
+						return; // should still run the "finally" clause
 					}
 					const diags = displayDiagnostics(result, doc!.document, startTime, !!showSummary, verb);
 					dcoll.delete(doc!.document.uri);
