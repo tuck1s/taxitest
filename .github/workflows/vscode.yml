@@ -33,5 +33,5 @@ jobs:
         if: runner.os == 'Linux'
       - run: npm test
         if: runner.os != 'Linux'
-      # test coverage
-      - run: npm run coverage
+      # test coverage, TODO: increase threshold
+      - run: npm run coverage --50
