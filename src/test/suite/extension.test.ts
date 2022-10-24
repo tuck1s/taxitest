@@ -4,7 +4,7 @@ import * as assert from 'assert';
 // as well as import your extension to test it
 import * as vscode from 'vscode';
 import * as taxi from '../../extension';
-
+import * as nock from 'nock';
 
 // Calculated expected length of an API result, with/without summary
 function expectedLength(result: taxi.Result, summary: boolean): number {
@@ -22,11 +22,28 @@ function expectedLength(result: taxi.Result, summary: boolean): number {
 
 
 suite('Taxi for Email Validation Extension Test Suite', () => {
+
+	// pre-requisites
+	let dcoll = vscode.languages.createDiagnosticCollection('taxi');
+	let cfg = vscode.workspace.getConfiguration('taxi');
+	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
+	let doc: vscode.TextDocument;
+
+	suiteSetup(async () => {
+		doc = await vscode.workspace.openTextDocument({
+			content: 'The quick brown fox'
+		});
+		const ed = await vscode.window.showTextDocument(doc);
+	});
+
+	suiteTeardown(async () => {
+		// See https://stackoverflow.com/questions/44733028/how-to-close-textdocument-in-vs-code
+		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+	});
+
 	vscode.window.showInformationMessage('Start all tests.');
 
 	test('displayDiagnostics - empty, with & without summary', async () => {
-
-		let dcoll = vscode.languages.createDiagnosticCollection('taxi');
 		const startTime = new Date();
 		const result: taxi.Result = {
 			// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -37,11 +54,6 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			warnings: {},
 		};
 
-		const doc = await vscode.workspace.openTextDocument({
-			content: 'The quick brown fox'
-		});
-		const ed = await vscode.window.showTextDocument(doc);
-
 		var summary = false;
 		const diags = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags.length, expectedLength(result, summary));
@@ -49,14 +61,10 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		summary = true;
 		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags2.length, expectedLength(result, summary));
-
-		// See https://stackoverflow.com/questions/44733028/how-to-close-textdocument-in-vs-code
-		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
 	});
 
 	test('displayDiagnostics - errors & warnings, with & without summary', async () => {
 
-		let dcoll = vscode.languages.createDiagnosticCollection('taxi');
 		const startTime = new Date();
 		const result: taxi.Result = {
 			// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -89,11 +97,6 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			],
 		};
 
-		const doc = await vscode.workspace.openTextDocument({
-			content: 'The quick brown fox'
-		});
-		const ed = await vscode.window.showTextDocument(doc);
-
 		var summary = false;
 		const diags = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags.length, expectedLength(result, summary));
@@ -101,9 +104,51 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		summary = true;
 		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags2.length, expectedLength(result, summary));
+	});
 
-		// See https://stackoverflow.com/questions/44733028/how-to-close-textdocument-in-vs-code
+	test('Email Design System API calls', async () => {
+		// Verify
+		let s = nock(String(cfg.get('uri')))
+			.post('/api/v1/eds/check')
+			.reply(200, 'OK');
+		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html');
+
+		// Update
+		s = nock(String(cfg.get('uri')))
+			.patch('/api/v1/eds/update')
+			.reply(200, 'OK');
+		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+
+		// Unexpected verb
+		s = nock(String(cfg.get('uri')))
+			.patch('/api/v1/eds/update')
+			.reply(200, 'OK');
+		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'flump', 'source');
+
+		// Unexpected response
+		s = nock(String(cfg.get('uri')))
+			.patch('/api/v1/eds/update')
+			.reply(429);
+		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+
+		// close active window - error condition
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
+		s = nock(String(cfg.get('uri')))
+			.patch('/api/v1/eds/update')
+			.reply(200, 'OK');
+		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+
+		// Restore active window afterwards
+		doc = await vscode.workspace.openTextDocument({
+			content: 'The quick brown fox'
+		});
+		await vscode.window.showTextDocument(doc);
+	});
+
+	test('ID update', async () => {
+		taxi.askForEmailDesignSystemId(cfg, bar);
+
+		taxi.setEmailDesignSystemId(cfg, bar, '123456;my design system');
 	});
 
 });
