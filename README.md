@@ -1,8 +1,13 @@
-# Taxi for Email - validate Email Design System syntax
+# Taxi for Email - Email Design System syntax - validate and update
 
 [![.github/workflows/vscode.yml](https://github.com/tuck1s/taxitest/actions/workflows/vscode.yml/badge.svg)](https://github.com/tuck1s/taxitest/actions/workflows/vscode.yml)
 
-This Visual Studio Code extension enables you to validate Taxi for Email design system files directly, without having to first upload them.
+This Visual Studio Code extension enables you to work with Taxi for Email design system (EDS) files, directly from your editor. It can
+
+* Validate from your editor window
+* Update from your editor window to an existing EDS in your Taxi account
+
+Not yet supported: Create a new EDS.
 
 ## Pre-requisites
 A [Taxi for Email](https://taxiforemail.com/) account, with privileges to create an API key.
@@ -10,9 +15,22 @@ A [Taxi for Email](https://taxiforemail.com/) account, with privileges to create
 
 The [Taxi for email API](http://get.taxi.support/en/collections/3384114-taxi-for-email-api) is used by this extension - follow [these instructions](http://get.taxi.support/en/articles/6062003-taxi-for-email-api) to obtain your API key.
 
-Validation can take a few seconds on large files (~ 5 .. 10 seconds for a 4000 line file), and you need an Internet connection.  For these reasons, unlike some language plugins, it doesn't run all the time in the background.
+Validations and updates can take a few seconds on large files (~ 5 .. 10 seconds for a 4000 line file), and you need an Internet connection.  For these reasons, unlike some language plugins, it doesn't run all the time in the background.
 
-### Validating
+### Status bar
+The status bar enables you to set the numeric EDS id of the project you're working on. This is held in workspace `.vscode/settings.json` i.e. under the local folder where your project resides.
+
+When a current EDS id has not been set, the status bar shows as:
+
+![Taxi status bar](images/taxi-status-bar-blank.png)
+
+Click this area to set a numeric ID. You can also add a text description after a semi-colon.
+
+While actions are running, the status bar shows an animated 'sync' icon.
+
+![Taxi status bar](images/taxi-status-bar-icon.png)
+
+## Validating
 
 Start validation from the [Command Palette](https://code.visualstudio.com/docs/getstarted/userinterface#_command-palette) and select it.
 
@@ -35,6 +53,15 @@ As with other language syntax checkers, the icon indicates if Taxi for Email con
 <span style="color:dodgerblue">ⓘ</span>| Informational
 
 Note the Informational line the end, showing how lines of code checked, error and warning counts, and the time taken to validate. This can be enabled/disabled in [Extension Settings](#extension-settings).
+
+## Updating an existing Email Design System
+
+Run this from the command palette, or map to a shortcut key. After the upload is complete, the "problems" window is updated with the errors/warnings report on your EDS.
+
+If you try to update an EDS without any actual file changes, Taxi returns an error message:
+
+![Taxi update - identical, error message](images/taxi-update-identical-err.png)
+
 ## Requirements - API Key
 
 To obtain an API key and key ID - in your Taxi for Email account, navigate to "Integrations" / "API Keys". Select "Add New" and follow the next steps there.
