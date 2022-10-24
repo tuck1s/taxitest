@@ -33,7 +33,6 @@ jobs:
         if: runner.os == 'Linux'
       - run: npm test
         if: runner.os != 'Linux'
-      # test coverage, TODO: increase threshold
+      # test coverage
       - run: xvfb-run -a npm run coverage
         if: runner.os == 'Linux'
-
