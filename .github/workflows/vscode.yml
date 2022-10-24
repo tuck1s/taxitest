@@ -34,4 +34,4 @@ jobs:
       - run: npm test
         if: runner.os != 'Linux'
       # test coverage
-      - run: npm run coverage src/extension.ts
+      - run: npm run coverage
