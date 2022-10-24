@@ -33,7 +33,6 @@
 				"command": "taxitest.updateEDS",
 				"title": "Taxi for Email - update Email Design System"
 			}
-
 		],
 		"configuration": [
 			{
@@ -67,19 +66,18 @@
 						"default": false,
 						"description": "Enables informational output of lines checked, errors, warnings, and run time"
 					},
-					"taxi.designSystemId": { 
+					"taxi.designSystemId": {
 						"order": 5,
 						"type": "integer",
 						"default": "",
 						"description": "The design system id relating to the current workspace"
 					},
-					"taxi.designSystemDescr": { 
+					"taxi.designSystemDescr": {
 						"order": 6,
 						"type": "string",
 						"default": "",
 						"description": "Optional text description, held solely in local workspace"
 					}
-
 				}
 			}
 		]
@@ -90,7 +88,8 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
 		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js"
+		"test": "node ./out/test/runTest.js",
+		"coverage": "c8 --check-coverage npm run test"
 	},
 	"devDependencies": {
 		"@types/glob": "^7.2.0",
@@ -100,9 +99,10 @@
 		"@typescript-eslint/eslint-plugin": "^5.9.1",
 		"@typescript-eslint/parser": "^5.9.1",
 		"@vscode/test-electron": "^2.0.3",
+		"c8": "^7.12.0",
 		"eslint": "^8.6.0",
 		"glob": "^7.2.0",
-		"mocha": "^9.1.3",
+		"mocha": "^10.1.0",
 		"typescript": "^4.5.4"
 	},
 	"dependencies": {

@@ -16,7 +16,6 @@ export function activate(context: vscode.ExtensionContext) {
 	// Create the extension UI elements and commands
 	const cfg = vscode.workspace.getConfiguration('taxi');
 
-	// Create the status bar element
 	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
 	createStatusBarInput(cfg, context, bar);
 	createValidationAction(cfg, context, dcoll, bar);
@@ -44,11 +43,11 @@ function createStatusBarInput(cfg: vscode.WorkspaceConfiguration, context: vscod
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('taxitest.setEDS', () => setEmailDesignSystemId(cfg, bar));
+	let disposable = vscode.commands.registerCommand('taxitest.setEDS', () => askForEmailDesignSystemId(cfg, bar));
 	context.subscriptions.push(disposable);
 }
 
-function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.StatusBarItem) {
+export function askForEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.StatusBarItem) {
 	let options: vscode.InputBoxOptions = {
 		title: 'Set Email Design System identifier for this workspace',
 		prompt: 'Numeric ID; optional description',
@@ -58,22 +57,25 @@ function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.
 			return isNumber(id) ? null : 'Must be 0 .. 9';
 		},
 	};
-
 	vscode.window.showInputBox(options).then(value => {
-		if (value) {
-			var [id, descr] = splitBySemiColon(value);
-			const idNum = parseInt(id, 10);
-			console.log(`Setting EDS ID = ${idNum}, descr = ${descr}`);
-			cfg.update('designSystemId', idNum, vscode.ConfigurationTarget.Workspace).then(() => {
-				cfg.update('designSystemDescr', descr, vscode.ConfigurationTarget.Workspace).then(() => {
-					updateEDSBar(bar, id, descr, '');
-				});
-			});
-		}
+		setEmailDesignSystemId(cfg, bar, value);
 	});
 }
 
-function updateEDSBar(bar: vscode.StatusBarItem, id: unknown, descr: unknown, decoration: string) {
+export function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.StatusBarItem, value?: string) {
+	if (value) {
+		var [id, descr] = splitBySemiColon(value);
+		const idNum = parseInt(id, 10);
+		console.log(`Setting EDS ID = ${idNum}, descr = ${descr}`);
+		cfg.update('designSystemId', idNum, vscode.ConfigurationTarget.Workspace).then(() => {
+			cfg.update('designSystemDescr', descr, vscode.ConfigurationTarget.Workspace).then(() => {
+				updateEDSBar(bar, id, descr, '');
+			});
+		});
+	}
+}
+
+export function updateEDSBar(bar: vscode.StatusBarItem, id: unknown, descr: unknown, decoration: string) {
 	bar.text = 'EDS: ';
 	if (id) {
 		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
@@ -132,7 +134,7 @@ function createUpdateEDSAction(cfg: vscode.WorkspaceConfiguration, context: vsco
 //-----------------------------------------------------------------------------
 // General call handler for Validate and Update, as these are similar
 //-----------------------------------------------------------------------------
-function emailDesignSystemCall(cfg: vscode.WorkspaceConfiguration, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem,
+export function emailDesignSystemCall(cfg: vscode.WorkspaceConfiguration, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem,
 	apiMethod: Method, apiEndpoint: string, verb: string, docAttribute: string) {
 	// Gather credentials and settings
 	const uri = cfg.get('uri');

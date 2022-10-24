@@ -1,0 +1,14 @@
+{
+    "all": true,
+    "include": [
+        "out/extension.*"
+    ],
+    "exclude": [
+        "**/node_modules/**",
+        "out/test/"
+    ],
+    "reporter": [
+        "text",
+        "html"
+    ]
+}
