@@ -37,7 +37,7 @@ function createStatusBarInput(cfg: vscode.WorkspaceConfiguration, context: vscod
 	bar.name = 'Taxi for Email Design System';
 	bar.tooltip = 'Taxi for Email Design System';
 	bar.command = 'taxitest.setEDS';
-	updateEDSBar(bar, cfg.get('designSystemId'), cfg.get('designSystemDescr'), '');
+	updateEDSBar(bar, cfg, '');
 	bar.show();
 
 	// The command has been defined in the package.json file
@@ -66,17 +66,28 @@ export function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: 
 	if (value) {
 		var [id, descr] = splitBySemiColon(value);
 		const idNum = parseInt(id, 10);
-		console.log(`Setting EDS ID = ${idNum}, descr = ${descr}`);
-		cfg.update('designSystemId', idNum, vscode.ConfigurationTarget.Workspace).then(() => {
-			cfg.update('designSystemDescr', descr, vscode.ConfigurationTarget.Workspace).then(() => {
-				updateEDSBar(bar, id, descr, '');
+		try {
+			cfg.update('designSystemId', idNum, vscode.ConfigurationTarget.WorkspaceFolder).then(() => {
+				try {
+					cfg.update('designSystemDescr', descr, vscode.ConfigurationTarget.WorkspaceFolder).then(() => {
+						updateEDSBar(bar, cfg, '');
+						console.log(`Set EDS ID = ${idNum}, descr = ${descr}`);
+					});
+				} catch (error) {
+					console.log('failure updating designSystemDescr');
+				};
+
 			});
-		});
+		} catch (error) {
+			console.log('failure updating designSystemId');
+		};
 	}
 }
 
-export function updateEDSBar(bar: vscode.StatusBarItem, id: unknown, descr: unknown, decoration: string) {
+export function updateEDSBar(bar: vscode.StatusBarItem, cfg: vscode.WorkspaceConfiguration, decoration: string) {
 	bar.text = 'EDS: ';
+	const id = cfg.get('designSystemId');
+	const descr = cfg.get('designSystemDescr');
 	if (id) {
 		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
 		bar.text += String(id);
@@ -146,7 +157,7 @@ export function emailDesignSystemCall(cfg: vscode.WorkspaceConfiguration, dcoll:
 
 	const startTime = new Date();
 	// show "in progress" sync icon
-	updateEDSBar(bar, designSystemId, designSystemDescr, '$(sync~spin)');
+	updateEDSBar(bar, cfg, '$(sync~spin)');
 
 	// Get the current text document
 	const doc = vscode.window.activeTextEditor;
@@ -224,12 +235,26 @@ export function emailDesignSystemCall(cfg: vscode.WorkspaceConfiguration, dcoll:
 			if (error.response.data.message) {
 				strError += ` : ${error.response.data.message}`;
 			}
+			if (error.response.data.syntax_errors) {
+				const se = error.response.data.syntax_errors;
+				let result: Result = {
+					// eslint-disable-next-line @typescript-eslint/naming-convention
+					'total_errors': Object.values(se).length,
+					// eslint-disable-next-line @typescript-eslint/naming-convention
+					'total_warnings': 0,
+					'errors': se,
+					'warnings': {},
+				};
+				const diags = displayDiagnostics(result, doc!.document, startTime, !!showSummary, verb);
+				dcoll.delete(doc!.document.uri);
+				dcoll.set(doc!.document.uri, diags);
+			}
 			console.log(strError);
 			vscode.window.showErrorMessage(strError);
 		})
 		.finally(() => {
 			// remove "in progress" sync icon
-			updateEDSBar(bar, designSystemId, designSystemDescr, '');
+			updateEDSBar(bar, cfg, '');
 		});;
 }
 
