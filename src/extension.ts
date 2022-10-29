@@ -62,24 +62,20 @@ export function askForEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, ba
 	});
 }
 
-export function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.StatusBarItem, value?: string) {
+export async function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.StatusBarItem, value?: string) {
 	if (value) {
 		var [id, descr] = splitBySemiColon(value);
 		const idNum = parseInt(id, 10);
 		try {
-			cfg.update('designSystemId', idNum, vscode.ConfigurationTarget.WorkspaceFolder).then(() => {
-				try {
-					cfg.update('designSystemDescr', descr, vscode.ConfigurationTarget.WorkspaceFolder).then(() => {
-						updateEDSBar(bar, cfg, '');
-						console.log(`Set EDS ID = ${idNum}, descr = ${descr}`);
-					});
-				} catch (error) {
-					console.log('failure updating designSystemDescr');
-				};
-
-			});
+			// null enables resource per workspace / workspace folder
+			await cfg.update('designSystemId', idNum, null);
+			await cfg.update('designSystemDescr', descr, null);
+			console.log(`Set EDS ID = ${idNum}, descr = ${descr}`);
+			// MUST refresh the cfg object to see the new values
+			cfg = vscode.workspace.getConfiguration('taxi');
+			updateEDSBar(bar, cfg, '');
 		} catch (error) {
-			console.log('failure updating designSystemId');
+			console.log(`failure updating designSystemId / designSystemDescr: ${error}`);
 		};
 	}
 }
@@ -92,7 +88,7 @@ export function updateEDSBar(bar: vscode.StatusBarItem, cfg: vscode.WorkspaceCon
 		bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
 		bar.text += String(id);
 		if (descr) {
-			bar.text += ` ;` + String(descr);		// add optional description
+			bar.text += `; ` + String(descr);		// add optional description
 		}
 	}
 	else {
