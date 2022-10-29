@@ -13,13 +13,10 @@ export function activate(context: vscode.ExtensionContext) {
 	// 	 Severity levels are: Error, Warning, Informational, Hint
 	let dcoll = vscode.languages.createDiagnosticCollection('taxi');
 
-	// Create the extension UI elements and commands
-	const cfg = vscode.workspace.getConfiguration('taxi');
-
 	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
-	createStatusBarInput(cfg, context, bar);
-	createValidationAction(cfg, context, dcoll, bar);
-	createUpdateEDSAction(cfg, context, dcoll, bar);
+	createStatusBarInput(context, bar);
+	createValidationAction(context, dcoll, bar);
+	createUpdateEDSAction(context, dcoll, bar);
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');
 }
@@ -33,23 +30,28 @@ export function deactivate() { }
 // a text description in the local workspace. This should be eventually removed when
 // the API supports description texts.
 //-----------------------------------------------------------------------------
-function createStatusBarInput(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
+function createStatusBarInput(context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
 	bar.name = 'Taxi for Email Design System';
 	bar.tooltip = 'Taxi for Email Design System';
 	bar.command = 'taxitest.setEDS';
-	updateEDSBar(bar, cfg, '');
+	updateEDSBar(bar, '');
 	bar.show();
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('taxitest.setEDS', () => askForEmailDesignSystemId(cfg, bar));
+	let disposable = vscode.commands.registerCommand('taxitest.setEDS', () => askForEmailDesignSystemId(bar));
 	context.subscriptions.push(disposable);
 }
 
-export function askForEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.StatusBarItem) {
+export function askForEmailDesignSystemId(bar: vscode.StatusBarItem) {
+	const f = vscode.workspace.workspaceFolders;
+	let path = '';
+	if(f) {
+		path = f[0].uri.path;
+	}
 	let options: vscode.InputBoxOptions = {
-		title: 'Set Email Design System identifier for this workspace',
+		title: `Set Email Design System identifier for ${path}`,
 		prompt: 'Numeric ID; optional description',
 		placeHolder: '123456; my new project',
 		validateInput(value) {
@@ -58,30 +60,31 @@ export function askForEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, ba
 		},
 	};
 	vscode.window.showInputBox(options).then(value => {
-		setEmailDesignSystemId(cfg, bar, value);
+		setEmailDesignSystemId(bar, value);
 	});
 }
 
-export async function setEmailDesignSystemId(cfg: vscode.WorkspaceConfiguration, bar: vscode.StatusBarItem, value?: string) {
+export async function setEmailDesignSystemId(bar: vscode.StatusBarItem, value?: string) {
 	if (value) {
 		var [id, descr] = splitBySemiColon(value);
 		const idNum = parseInt(id, 10);
 		try {
+			const cfg = vscode.workspace.getConfiguration('taxi');
 			// null enables resource per workspace / workspace folder
 			await cfg.update('designSystemId', idNum, null);
 			await cfg.update('designSystemDescr', descr, null);
 			console.log(`Set EDS ID = ${idNum}, descr = ${descr}`);
 			// MUST refresh the cfg object to see the new values
-			cfg = vscode.workspace.getConfiguration('taxi');
-			updateEDSBar(bar, cfg, '');
+			updateEDSBar(bar, '');
 		} catch (error) {
 			console.log(`failure updating designSystemId / designSystemDescr: ${error}`);
 		};
 	}
 }
 
-export function updateEDSBar(bar: vscode.StatusBarItem, cfg: vscode.WorkspaceConfiguration, decoration: string) {
+export function updateEDSBar(bar: vscode.StatusBarItem, decoration: string) {
 	bar.text = 'EDS: ';
+	const cfg = vscode.workspace.getConfiguration('taxi');
 	const id = cfg.get('designSystemId');
 	const descr = cfg.get('designSystemDescr');
 	if (id) {
@@ -120,30 +123,31 @@ function splitBySemiColon(value: string) {
 //-----------------------------------------------------------------------------
 // Extension commands for validating and updating an EDS and displaying the diagnostic output
 //-----------------------------------------------------------------------------
-function createValidationAction(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
+function createValidationAction(context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('taxitest.validateEDS', () =>
-		emailDesignSystemCall(cfg, dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html'));
+		emailDesignSystemCall(dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html'));
 	context.subscriptions.push(disposable);
 }
 
-function createUpdateEDSAction(cfg: vscode.WorkspaceConfiguration, context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
+function createUpdateEDSAction(context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('taxitest.updateEDS', () =>
-		emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source'));
+		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source'));
 	context.subscriptions.push(disposable);
 }
 
 //-----------------------------------------------------------------------------
 // General call handler for Validate and Update, as these are similar
 //-----------------------------------------------------------------------------
-export function emailDesignSystemCall(cfg: vscode.WorkspaceConfiguration, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem,
+export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem,
 	apiMethod: Method, apiEndpoint: string, verb: string, docAttribute: string) {
 	// Gather credentials and settings
+	const cfg = vscode.workspace.getConfiguration('taxi');
 	const uri = cfg.get('uri');
 	const apiKey = cfg.get('apiKey');
 	const keyID = cfg.get('keyId');
@@ -153,7 +157,7 @@ export function emailDesignSystemCall(cfg: vscode.WorkspaceConfiguration, dcoll:
 
 	const startTime = new Date();
 	// show "in progress" sync icon
-	updateEDSBar(bar, cfg, '$(sync~spin)');
+	updateEDSBar(bar, '$(sync~spin)');
 
 	// Get the current text document
 	const doc = vscode.window.activeTextEditor;
@@ -250,7 +254,7 @@ export function emailDesignSystemCall(cfg: vscode.WorkspaceConfiguration, dcoll:
 		})
 		.finally(() => {
 			// remove "in progress" sync icon
-			updateEDSBar(bar, cfg, '');
+			updateEDSBar(bar, '');
 		});;
 }
 

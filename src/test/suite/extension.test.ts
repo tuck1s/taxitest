@@ -111,32 +111,32 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		let s = nock(String(cfg.get('uri')))
 			.post('/api/v1/eds/check')
 			.reply(200, 'OK');
-		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html');
+		taxi.emailDesignSystemCall(dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html');
 
 		// Update
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// Unexpected verb
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'flump', 'source');
+		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'flump', 'source');
 
 		// Unexpected response
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(429);
-		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// close active window - error condition
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		taxi.emailDesignSystemCall(cfg, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// Restore active window afterwards
 		doc = await vscode.workspace.openTextDocument({
@@ -146,9 +146,9 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 	});
 
 	test('ID update', async () => {
-		taxi.askForEmailDesignSystemId(cfg, bar);
+		taxi.askForEmailDesignSystemId(bar);
 
-		taxi.setEmailDesignSystemId(cfg, bar, '123456;my design system');
+		taxi.setEmailDesignSystemId(bar, '123456;my design system');
 	});
 
 });
