@@ -2,7 +2,7 @@
 	"name": "taxi-for-email-validate-upload",
 	"displayName": "Taxi for Email EDS validate and upload",
 	"description": "Validate Email Design System (EDS) syntax and upload EDS files",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"publisher": "tuck1s",
 	"repository": {
 		"type": "git",
