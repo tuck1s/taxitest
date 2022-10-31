@@ -160,14 +160,14 @@ export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: v
 	updateEDSBar(bar, '$(sync~spin)');
 
 	// Get the current text document
-	const doc = vscode.window.activeTextEditor;
-	if (!doc) {
+	const editor = vscode.window.activeTextEditor;
+	if (!editor) {
 		vscode.window.showInformationMessage(`No active document, skipping API ${verb}.`);
 		return;
 	}
-	console.log(`Taxi for Email: sending ${doc!.document.lineCount} lines to ${verb}`);
-	const fileName = doc!.document.fileName;
-	const docStream = Buffer.from(doc!.document.getText());
+	console.log(`Taxi for Email: sending ${editor!.document.lineCount} lines to ${verb}`);
+	const fileName = editor.document.fileName;
+	const docStream = Buffer.from(editor.document.getText());
 
 	// Build the form data for the API call
 	// see https://masteringjs.io/tutorials/axios/form-data for why getHeaders() is needed
@@ -215,9 +215,9 @@ export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: v
 						console.log(`Unexpected action ${verb}`);
 						return; // should still run the "finally" clause
 					}
-					const diags = displayDiagnostics(result, doc!.document, startTime, !!showSummary, verb);
-					dcoll.delete(doc!.document.uri);
-					dcoll.set(doc!.document.uri, diags);
+					const diags = displayDiagnostics(result, editor!.document, startTime, !!showSummary, verb);
+					dcoll.delete(editor!.document.uri);
+					dcoll.set(editor!.document.uri, diags);
 				}
 			} else {
 				// Unexpected response
@@ -231,7 +231,7 @@ export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: v
 	})
 		.catch(error => {
 			// API has returned an error
-			let strError = `Taxi for Email: ${error.response.status} - ${error.response.statusText}`;
+			let strError = `${error.response.status} - ${error.response.statusText}`;
 			if (error.response.data.message) {
 				strError += ` : ${error.response.data.message}`;
 			}
@@ -245,9 +245,9 @@ export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: v
 					'errors': se,
 					'warnings': {},
 				};
-				const diags = displayDiagnostics(result, doc!.document, startTime, !!showSummary, verb);
-				dcoll.delete(doc!.document.uri);
-				dcoll.set(doc!.document.uri, diags);
+				const diags = displayDiagnostics(result, editor.document, startTime, !!showSummary, verb);
+				dcoll.delete(editor.document.uri);
+				dcoll.set(editor.document.uri, diags);
 			}
 			console.log(strError);
 			vscode.window.showErrorMessage(strError);

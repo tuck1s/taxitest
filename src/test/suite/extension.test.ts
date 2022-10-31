@@ -31,7 +31,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 
 	suiteSetup(async () => {
 		doc = await vscode.workspace.openTextDocument({
-			content: 'The quick brown fox'
+			content: 'The quick brown fox',
 		});
 		const ed = await vscode.window.showTextDocument(doc);
 	});
@@ -119,17 +119,44 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			.reply(200, 'OK');
 		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
+	});
+
+	test('Email Design System API calls - error responses', async () => {
 		// Unexpected verb
-		s = nock(String(cfg.get('uri')))
+		let s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
 		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'flump', 'source');
-
+		
 		// Unexpected response
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
-			.reply(429);
+			.reply(400, {
+				'message': 'unexpected item in bagging area'
+			});
 		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		// Syntax error response
+		s = nock(String(cfg.get('uri')))
+			.patch('/api/v1/eds/update')
+			.reply(422, {
+				'message': 'The given HTML file contains syntax errors',
+				// eslint-disable-next-line @typescript-eslint/naming-convention
+				'syntax_errors': {
+				// eslint-disable-next-line @typescript-eslint/naming-convention
+				'1': {
+					'type': 'ERROR',
+					'message': 'module Element has no name',
+					'details': 'module elements must have a name= attribute',
+					'element': [
+					[
+						'taxi-full-name',
+						'modules[]'
+					]
+					]
+				}
+				}
+			});
+	  	taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// close active window - error condition
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
@@ -143,12 +170,13 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			content: 'The quick brown fox'
 		});
 		await vscode.window.showTextDocument(doc);
-	});
+});
 
 	test('ID update', async () => {
 		taxi.askForEmailDesignSystemId(bar);
 
 		taxi.setEmailDesignSystemId(bar, '123456;my design system');
-	});
+		// TODO: Check setting worked
+});
 
 });
