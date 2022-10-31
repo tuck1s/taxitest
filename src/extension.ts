@@ -74,7 +74,6 @@ export async function setEmailDesignSystemId(bar: vscode.StatusBarItem, value?: 
 			await cfg.update('designSystemId', idNum, null);
 			await cfg.update('designSystemDescr', descr, null);
 			console.log(`Set EDS ID = ${idNum}, descr = ${descr}`);
-			// MUST refresh the cfg object to see the new values
 			updateEDSBar(bar, '');
 		} catch (error) {
 			console.log(`failure updating designSystemId / designSystemDescr: ${error}`);
@@ -84,6 +83,7 @@ export async function setEmailDesignSystemId(bar: vscode.StatusBarItem, value?: 
 
 export function updateEDSBar(bar: vscode.StatusBarItem, decoration: string) {
 	bar.text = 'EDS: ';
+	// Need to refresh the local config object from persistent storage
 	const cfg = vscode.workspace.getConfiguration('taxi');
 	const id = cfg.get('designSystemId');
 	const descr = cfg.get('designSystemDescr');
@@ -146,7 +146,7 @@ function createUpdateEDSAction(context: vscode.ExtensionContext, dcoll: vscode.D
 //-----------------------------------------------------------------------------
 export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem,
 	apiMethod: Method, apiEndpoint: string, verb: string, docAttribute: string) {
-	// Gather credentials and settings
+	// Gather credentials and settings. Need to refresh the local config object from persistent storage
 	const cfg = vscode.workspace.getConfiguration('taxi');
 	const uri = cfg.get('uri');
 	const apiKey = cfg.get('apiKey');
