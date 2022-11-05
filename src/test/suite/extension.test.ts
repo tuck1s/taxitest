@@ -20,7 +20,6 @@ function expectedLength(result: taxi.Result, summary: boolean): number {
 	return l + (summary ? 1 : 0); // allow for 1 extra if there's a summary
 }
 
-
 suite('Taxi for Email Validation Extension Test Suite', () => {
 
 	// pre-requisites

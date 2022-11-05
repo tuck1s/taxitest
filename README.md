@@ -11,6 +11,7 @@ Not yet supported: Create a new EDS.
 
 ## Pre-requisites
 A [Taxi for Email](https://taxiforemail.com/) account, with privileges to create an API key.
+
 ## Features
 
 The [Taxi for email API](http://get.taxi.support/en/collections/3384114-taxi-for-email-api) is used by this extension - follow [these instructions](http://get.taxi.support/en/articles/6062003-taxi-for-email-api) to obtain your API key.
@@ -90,10 +91,14 @@ Uri|Enter your account URI including your account subdomain. You can find this i
 
     ![Taxi auth error](images/taxi-no-active-doc.png)
 
-
 ## Contributing
 
 This is a volunteer open-source project and is not directly supported by the Taxi for Email support service. If you find an issue, please open an issue in Github, or (even better) - contribute a pull request.
+
+## Analytics
+
+Basic usage analytics are logged on activation and API calls.
+
 ## Releases
 See [changelog](CHANGELOG.md).
 

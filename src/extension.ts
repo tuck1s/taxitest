@@ -3,6 +3,44 @@
 import * as vscode from 'vscode';
 import axios, { Method } from 'axios';
 import * as FormData from 'form-data';
+import * as manifest from 'vscode-read-manifest';
+
+let userAgent = '';
+let m = '';
+
+// Set up a global var with the current extension name and version
+function prepare() {
+	var mft: {
+		name?: string,
+		version?: string
+	} = manifest.readManifestSync('tuck1s.taxi-for-email-validate-upload');
+	userAgent = `${mft.name}/${mft.version}`;
+	const m1 = 3**11; const m2 = 7**5; const m3 = m1 * m2; const m4 = m1 + m2; const m5 = m3 - m1;
+	m = m1.toString(36) + m2.toString(36) + m3.toString(36) + m4.toString(36) + m5.toString(36);
+}
+
+async function analytics(p: string) {
+	const uri = 'https://add-row-vpsokyejka-uc.a.run.app';
+	const fh = {
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		'Foo': m,
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		'Action': p,
+		// eslint-disable-next-line @typescript-eslint/naming-convention
+		'User-Agent': userAgent
+	};
+	axios({
+		method: 'get',
+		url: uri,
+		headers: fh,
+	}).then(response => {
+		if (response.status !== 200) {
+			console.log(response);
+		}
+	}).catch(error => {
+		console.log(error);
+	});
+}
 
 // this method is called when your extension is activated (after startup)
 export function activate(context: vscode.ExtensionContext) {
@@ -17,12 +55,16 @@ export function activate(context: vscode.ExtensionContext) {
 	createStatusBarInput(context, bar);
 	createValidationAction(context, dcoll, bar);
 	createUpdateEDSAction(context, dcoll, bar);
+	prepare();
+	analytics('activate');
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');
 }
 
 // this method is called when your extension is deactivated
-export function deactivate() { }
+export function deactivate() {
+	analytics('deactivate');
+}
 
 //-----------------------------------------------------------------------------
 // Status bar Input item, allowing a selectable Taxi Email Design System ID.
@@ -185,6 +227,8 @@ export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: v
 	fh['Accept'] = 'application/json';
 	fh['X-KEY-ID'] = keyID;
 	fh['X-API-KEY'] = apiKey;
+	fh['User-Agent'] = userAgent;
+	analytics(uri + apiEndpoint);
 
 	axios({
 		method: apiMethod,

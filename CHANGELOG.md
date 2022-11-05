@@ -3,6 +3,13 @@
 The release version number is in [`package.json`](package.json).
 
 ## [Unreleased]
+- Analytics logged on usage.
+
+## [0.1.2] - 2022-10-31
+- Working upload feature.
+
+## [0.1.1] - 2022-10-14
+- Experimental upload feature.
 
 ## [0.1.0] - 2022-06-09
 - Links to Taxi for Email docs in README. First published release.
