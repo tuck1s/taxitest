@@ -4,12 +4,14 @@ import * as vscode from 'vscode';
 import axios, { Method } from 'axios';
 import * as FormData from 'form-data';
 import * as manifest from 'vscode-read-manifest';
+import * as fs from 'fs';
+import * as JSZip from 'jszip';
 
 let userAgent = '';
 let m = '';
 
 // Set up a global var with the current extension name and version
-function prepare() {
+async function prepare() {
 	var mft: {
 		name?: string,
 		version?: string
@@ -17,6 +19,18 @@ function prepare() {
 	userAgent = `${mft.name}/${mft.version}`;
 	const m1 = 3**11; const m2 = 7**5; const m3 = m1 * m2; const m4 = m1 + m2; const m5 = m3 - m1;
 	m = m1.toString(36) + m2.toString(36) + m3.toString(36) + m4.toString(36) + m5.toString(36);
+
+	// TODO
+	const f = fs.readFileSync('/Users/stuck/Documents/Demos/basic.html','utf8');
+	const z = new JSZip();
+	const folder = z.folder('stuff');
+	if(folder) {
+		folder.file('basic.html', f);
+	}
+	z.generateAsync({type:'nodebuffer'}).then((content) => {
+		fs.writeFileSync('/tmp/tmp.zip', content);
+		console.log('done');
+	});
 }
 
 async function analytics(p: string) {
@@ -43,7 +57,7 @@ async function analytics(p: string) {
 }
 
 // this method is called when your extension is activated (after startup)
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
 	// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
 	// clearing previous results as the tool is subsequently run.
 	//
