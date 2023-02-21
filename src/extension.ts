@@ -6,7 +6,7 @@ import * as vscode from 'vscode';
 import { cleanupObsoleteWorkspaceSpecificConfig  } from './config';
 import { analytics }  from './analytics';
 import { createStatusBarInput } from './ui';
-import { emailDesignSystemCall } from './eds_api';
+import { emailDesignSystemCall } from './eds_actions';
 
 
 // this method is called when your extension is activated (after startup)

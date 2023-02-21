@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 
 // Local project imports
 import { getTaxiConfig } from './config';
+import { Result, ResultDetails } from './eds_actions';
 
 //-----------------------------------------------------------------------------
 // Status bar Input item, allowing a selectable Taxi Email Design System ID.
@@ -86,4 +87,63 @@ function isNumber(value: string | number): boolean {
     return ((value !== null) &&
         (value !== '') &&
         !isNaN(Number(value.toString())));
+}
+
+//-----------------------------------------------------------------------------
+// Diagnostics output
+//-----------------------------------------------------------------------------
+
+
+export function sanitizeLinebreaks(s: string): string {
+	return s.replace(/[\r\n]+/g, ' ');
+}
+
+export function makeDiagnostic(d: ResultDetails, doc: vscode.TextDocument): vscode.Diagnostic {
+	// Get line number directly from the result details
+	var rng = new vscode.Range(0, 0, 0, 100); // default
+	if (d.line) {
+		// now find out actual length of this line in the doc. VS code lines start from 0 up.
+		rng = doc.lineAt(d.line - 1).range;
+	}
+	// The type string gives the severity - default to "information" unless ERROR or WARN
+	var sev = vscode.DiagnosticSeverity.Information;
+	switch (d.type.toUpperCase()) {
+		case 'WARN':
+			sev = vscode.DiagnosticSeverity.Warning;
+			break;
+
+		case 'ERROR':
+			sev = vscode.DiagnosticSeverity.Error;
+			break;
+	}
+	let diagString = sanitizeLinebreaks(d.message) + ': ' + sanitizeLinebreaks(d.details);
+	if (d.element) {
+		diagString += '\n' + d.element;
+	}
+	let diag = new vscode.Diagnostic(rng, diagString, sev);
+	diag.source = 'taxi';
+	return diag;
+}
+
+export function displayDiagnostics(result: Result, doc: vscode.TextDocument, startTime: Date, showSummary: boolean, verb: string): vscode.Diagnostic[] {
+	// Iterate through errors and warnings together, as each object has a type attribute
+	// concat results into a single array, for ease of iteration
+	// verb is a reporting nicety - e.g. "validated", "updated", "created" etc
+	let diags: vscode.Diagnostic[] = [];
+	// parse errors first, then warnings, as this is the most useful order of presentation
+	let combined: ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
+	for (const e of combined) {
+		const diag = makeDiagnostic(e, doc);
+		diags.push(diag);
+	}
+	// If enabled, show a final informational diagnostic, showing errors, warnings, and run-time.
+	if (showSummary) {
+		const lastLine = doc.lineCount;
+		const endTime = new Date();
+		const endTimeStr = endTime.toLocaleTimeString([], { hour12: false });
+		const duration = (endTime.getTime() - startTime.getTime()) / 1000;
+		const summary = `At ${endTimeStr}, Taxi for Email ${verb}: ${lastLine} lines, found ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
+		diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
+	}
+	return diags;
 }
