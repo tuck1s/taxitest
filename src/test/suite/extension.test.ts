@@ -6,9 +6,15 @@ import * as vscode from 'vscode';
 import * as taxi from '../../extension';
 import * as nock from 'nock';
 
+// Local project imports
+import { cleanupObsoleteWorkspaceSpecificConfig  } from '../../config';
+import { analytics }  from '../../analytics';
+import { askForEmailDesignSystemId, createStatusBarInput, setEmailDesignSystemId } from '../../ui';
+import { emailDesignSystemCall, Result, ResultDetails, displayDiagnostics } from '../../eds_api';
+
 // Calculated expected length of an API result, with/without summary
-function expectedLength(result: taxi.Result, summary: boolean): number {
-	let combined: taxi.ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
+function expectedLength(result: Result, summary: boolean): number {
+	let combined: ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
 	var l = 0;
 	for (const e of combined) {
 		if (typeof e.details === 'string') {
@@ -44,7 +50,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 
 	test('displayDiagnostics - empty, with & without summary', async () => {
 		const startTime = new Date();
-		const result: taxi.Result = {
+		const result: Result = {
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			total_errors: 0,
 			// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -54,18 +60,18 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		};
 
 		var summary = false;
-		const diags = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
+		const diags = displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags.length, expectedLength(result, summary));
 
 		summary = true;
-		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
+		const diags2 = displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags2.length, expectedLength(result, summary));
 	});
 
 	test('displayDiagnostics - errors & warnings, with & without summary', async () => {
 
 		const startTime = new Date();
-		const result: taxi.Result = {
+		const result: Result = {
 			// eslint-disable-next-line @typescript-eslint/naming-convention
 			total_errors: 1,
 			// eslint-disable-next-line @typescript-eslint/naming-convention
@@ -97,11 +103,11 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		};
 
 		var summary = false;
-		const diags = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
+		const diags = displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags.length, expectedLength(result, summary));
 
 		summary = true;
-		const diags2 = taxi.displayDiagnostics(result, doc, startTime, summary, 'test');
+		const diags2 = displayDiagnostics(result, doc, startTime, summary, 'test');
 		assert.strictEqual(diags2.length, expectedLength(result, summary));
 	});
 
@@ -110,13 +116,13 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		let s = nock(String(cfg.get('uri')))
 			.post('/api/v1/eds/check')
 			.reply(200, 'OK');
-		taxi.emailDesignSystemCall(dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html');
+		emailDesignSystemCall(dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html');
 
 		// Update
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 	});
 
@@ -125,7 +131,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		let s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'flump', 'source');
+		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'flump', 'source');
 		
 		// Unexpected response
 		s = nock(String(cfg.get('uri')))
@@ -133,7 +139,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			.reply(400, {
 				'message': 'unexpected item in bagging area'
 			});
-		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 		// Syntax error response
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
@@ -155,14 +161,14 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 				}
 				}
 			});
-	  	taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+	  	emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// close active window - error condition
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		taxi.emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// Restore active window afterwards
 		doc = await vscode.workspace.openTextDocument({
@@ -172,9 +178,9 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 });
 
 	test('ID update', async () => {
-		taxi.askForEmailDesignSystemId(bar);
+		askForEmailDesignSystemId(bar);
 
-		taxi.setEmailDesignSystemId(bar, '123456;my design system');
+		setEmailDesignSystemId(bar, '123456;my design system');
 		// TODO: Check setting worked
 });
 

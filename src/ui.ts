@@ -1,4 +1,6 @@
 import * as vscode from 'vscode';
+
+// Local project imports
 import { getTaxiConfig } from './config';
 
 //-----------------------------------------------------------------------------
