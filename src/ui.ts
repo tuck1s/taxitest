@@ -14,7 +14,7 @@ export function createStatusBarInput(context: vscode.ExtensionContext, bar: vsco
     bar.name = 'Taxi for Email Design System';
     bar.tooltip = 'Taxi for Email Design System';
     bar.command = 'taxitest.setEDS';
-    updateEDSBar(bar, '');
+    updateEDSBar(context, bar, '');
     bar.show();
 
     // The command has been defined in the package.json file
@@ -29,7 +29,11 @@ const maxdsListLen = 20;
 
 export function askForEmailDesignSystemId(context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
     try {
-        const dsList = context.globalState.get(dsListName) as vscode.QuickPickItem[];
+        let dsList = context.globalState.get(dsListName) as vscode.QuickPickItem[];
+        // handle case of nonexistent entries - map to a safe empty list
+        if(!dsList) {
+            dsList = [];
+        }
         const quickPick = vscode.window.createQuickPick();
         quickPick.placeholder = '123456';
         quickPick.canSelectMany = false;
@@ -71,46 +75,48 @@ export async function setEmailDesignSystemId(context: vscode.ExtensionContext, b
             }
             // Get current list of IDs. Append new/chosen value to head of list - maintain in "Most Recently Used" order
             var dsList = context.globalState.get(dsListName);
+            const newValue = JSON.parse(JSON.stringify(value));
             if (Array.isArray(dsList)) {
                 // Already got some entries
+                // Force a deep copy so we can change the list without messing up the new value
                 for (let v of dsList) {
-                    if (v.label === value.label) {
+                    if (v.label === newValue.label) {
                         // preserve the existing description, now at the top of the list.
                         // mark the existing item placeholder for deletion. We can't delete it yet, or it would disrupt the for loop indexing.
-                        value.description = v.description;
+                        // Note hack to get TypeScript to copy the string value, not the string reference.
+                        newValue.description = v.description;
                         v.label = '';
+                        v.description = '';
                     }
                 }
                 // Append newEntry to head. Remove any existing entries now marked for deletion
-                // Limit to the max number of entries
-                dsList = [value, ...dsList.filter(i => i.label !== '')].slice(0, maxdsListLen);
+                // Limit to a max number of entries.
+                dsList = [newValue, ...dsList.filter(i => i.label !== '')].slice(0, maxdsListLen);
             }
             else {
-                dsList = [value];
+                dsList = [newValue];
             }
-            // debug
-            if (Array.isArray(dsList)) {
-                for (let v of dsList) {
-                    console.log(v.label, v.description);
-                }
-            }
-            context.globalState.update(dsListName, dsList);
-            updateEDSBar(bar, '');
+            // write the list to persistent storage and update the UI
+            await context.globalState.update(dsListName, dsList);
+            updateEDSBar(context, bar, '');
         } catch (error) {
             console.log(`failure updating ${dsListName}: ${error}`);
         };
     }
 }
 
-export function updateEDSBar(bar: vscode.StatusBarItem, decoration: string) {
+// Reads current design system from context
+export function updateEDSBar(context: vscode.ExtensionContext, bar: vscode.StatusBarItem, decoration: string): string {
     bar.text = 'EDS: ';
-    // Need to refresh the local config object from persistent storage
-    const c = getTaxiConfig();
-    if (c.designSystemId) {
+    var designSystemID = '';
+    // Refresh the local view from persistent storage
+    var dsList = context.globalState.get(dsListName);
+    if (Array.isArray(dsList)) {
+        designSystemID = dsList[0].label;
         bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
-        bar.text += String(c.designSystemDescr);
-        if (c.designSystemDescr) {
-            bar.text += `; ` + String(c.designSystemDescr);		// add optional description
+        bar.text += designSystemID;
+        if (dsList[0].description) {
+            bar.text += `; ` + dsList[0].description;	// add optional description
         }
     }
     else {
@@ -118,6 +124,7 @@ export function updateEDSBar(bar: vscode.StatusBarItem, decoration: string) {
         bar.text += 'Click to set';
     }
     bar.text += decoration;
+    return designSystemID;
 }
 
 function isNumber(value: string | number): boolean {

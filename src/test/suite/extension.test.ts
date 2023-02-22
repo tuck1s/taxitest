@@ -116,13 +116,13 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		let s = nock(String(cfg.get('uri')))
 			.post('/api/v1/eds/check')
 			.reply(200, 'OK');
-		emailDesignSystemCall(dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html');
+		emailDesignSystemCall(context, dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html');
 
 		// Update
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 	});
 
@@ -131,7 +131,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		let s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'flump', 'source');
+		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'flump', 'source');
 		
 		// Unexpected response
 		s = nock(String(cfg.get('uri')))
@@ -139,7 +139,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			.reply(400, {
 				'message': 'unexpected item in bagging area'
 			});
-		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 		// Syntax error response
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
@@ -161,14 +161,14 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 				}
 				}
 			});
-	  	emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+	  	emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// close active window - error condition
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// Restore active window afterwards
 		doc = await vscode.workspace.openTextDocument({

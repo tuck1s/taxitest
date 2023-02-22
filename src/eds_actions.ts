@@ -10,14 +10,14 @@ import { userAgent, analytics } from './analytics';
 //-----------------------------------------------------------------------------
 // General call handler for Validate and Update, as these are similar
 //-----------------------------------------------------------------------------
-export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem,
+export function emailDesignSystemCall(context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem,
 	apiMethod: Method, apiEndpoint: string, verb: string, docAttribute: string): void {
 	// Gather credentials and settings. Need to refresh the local config object from persistent storage
 	const c = getTaxiConfig();
 
 	const startTime = new Date();
 	// show "in progress" sync icon
-	updateEDSBar(bar, '$(sync~spin)');
+	const designSystemID = updateEDSBar(context, bar, '$(sync~spin)');
 
 	// Get the current text document
 	const editor = vscode.window.activeTextEditor;
@@ -37,7 +37,7 @@ export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: v
 	var formData = new FormData();
 	formData.append(docAttribute, docStream, { filename: fileName });
 	if (verb === 'update') {
-		formData.append('id', c.designSystemId);
+		formData.append('id', designSystemID);
 		formData.append('import_images', 'false');
 		formData.append('without_review', 'true');						// TODO: check if this is the most useful behaviour
 	}
@@ -116,7 +116,7 @@ export function emailDesignSystemCall(dcoll: vscode.DiagnosticCollection, bar: v
 		})
 		.finally(() => {
 			// remove "in progress" sync icon
-			updateEDSBar(bar, '');
+			updateEDSBar(context, bar, '');
 		});;
 }
 

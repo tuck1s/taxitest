@@ -43,7 +43,7 @@ function createValidationAction(context: vscode.ExtensionContext, dcoll: vscode.
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('taxitest.validateEDS', () =>
-		emailDesignSystemCall(dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html'));
+		emailDesignSystemCall(context, dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html'));
 	context.subscriptions.push(disposable);
 }
 
@@ -52,6 +52,6 @@ function createUpdateEDSAction(context: vscode.ExtensionContext, dcoll: vscode.D
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('taxitest.updateEDS', () =>
-		emailDesignSystemCall(dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source'));
+		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source'));
 	context.subscriptions.push(disposable);
 }
