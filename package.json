@@ -65,18 +65,6 @@
 						"type": "boolean",
 						"default": false,
 						"description": "Enables informational output of lines checked, errors, warnings, and run time"
-					},
-					"taxi.designSystemId": {
-						"order": 5,
-						"type": "integer",
-						"default": "",
-						"description": "The design system id relating to the current workspace"
-					},
-					"taxi.designSystemDescr": {
-						"order": 6,
-						"type": "string",
-						"default": "",
-						"description": "Optional text description, held solely in local workspace"
 					}
 				}
 			}
