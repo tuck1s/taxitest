@@ -31,7 +31,7 @@ export function askForEmailDesignSystemId(context: vscode.ExtensionContext, bar:
     try {
         let dsList = context.globalState.get(dsListName) as vscode.QuickPickItem[];
         // handle case of nonexistent entries - map to a safe empty list
-        if(!dsList) {
+        if (!dsList) {
             dsList = [];
         }
         const quickPick = vscode.window.createQuickPick();
@@ -42,11 +42,11 @@ export function askForEmailDesignSystemId(context: vscode.ExtensionContext, bar:
 
         quickPick.onDidChangeValue(() => {
             // remove non-digit characters as invalid
-            quickPick.value = quickPick.value.replace(/\D/g,'');
+            quickPick.value = quickPick.value.replace(/\D/g, '');
 
             // if this is a NEW value, add to the original pick list, as the first item
-            const labels = quickPick.items.map(i => i.label); 
-            if(!labels.includes(quickPick.value)) {
+            const labels = quickPick.items.map(i => i.label);
+            if (!labels.includes(quickPick.value)) {
                 const newItem = { 'label': quickPick.value, 'description': '' };
                 quickPick.items = [newItem, ...dsList];
             }
@@ -75,18 +75,16 @@ export async function setEmailDesignSystemId(context: vscode.ExtensionContext, b
             }
             // Get current list of IDs. Append new/chosen value to head of list - maintain in "Most Recently Used" order
             var dsList = context.globalState.get(dsListName);
+            // Force a deep copy (ugh!) so we can change the list without messing up the new value
             const newValue = JSON.parse(JSON.stringify(value));
             if (Array.isArray(dsList)) {
                 // Already got some entries
-                // Force a deep copy so we can change the list without messing up the new value
                 for (let v of dsList) {
                     if (v.label === newValue.label) {
-                        // preserve the existing description, now at the top of the list.
-                        // mark the existing item placeholder for deletion. We can't delete it yet, or it would disrupt the for loop indexing.
-                        // Note hack to get TypeScript to copy the string value, not the string reference.
+                        // Preserve the existing description, now at the start of the list.
+                        // Mark the existing item as blank, for deletion. We can't delete it yet, or it would disrupt the for loop indexing.
                         newValue.description = v.description;
                         v.label = '';
-                        v.description = '';
                     }
                 }
                 // Append newEntry to head. Remove any existing entries now marked for deletion
@@ -96,8 +94,10 @@ export async function setEmailDesignSystemId(context: vscode.ExtensionContext, b
             else {
                 dsList = [newValue];
             }
+
             // write the list to persistent storage and update the UI
             await context.globalState.update(dsListName, dsList);
+            await context.globalState.update(dsListName, null);
             updateEDSBar(context, bar, '');
         } catch (error) {
             console.log(`failure updating ${dsListName}: ${error}`);
@@ -105,18 +105,21 @@ export async function setEmailDesignSystemId(context: vscode.ExtensionContext, b
     }
 }
 
-// Reads current design system from context
+// Reads current design system from top of list
 export function updateEDSBar(context: vscode.ExtensionContext, bar: vscode.StatusBarItem, decoration: string): string {
     bar.text = 'EDS: ';
     var designSystemID = '';
     // Refresh the local view from persistent storage
     var dsList = context.globalState.get(dsListName);
     if (Array.isArray(dsList)) {
-        designSystemID = dsList[0].label;
-        bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
-        bar.text += designSystemID;
-        if (dsList[0].description) {
-            bar.text += `; ` + dsList[0].description;	// add optional description
+        const top = dsList[0];
+        if(top && top.hasOwnProperty('label')) {
+            designSystemID = top.label;
+            bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
+            bar.text += designSystemID;
+            if (top.hasOwnProperty('label') && top.description) {
+                bar.text += `; ` + top.description;	// add optional description
+            }
         }
     }
     else {
@@ -127,10 +130,16 @@ export function updateEDSBar(context: vscode.ExtensionContext, bar: vscode.Statu
     return designSystemID;
 }
 
-function isNumber(value: string | number): boolean {
-    return ((value !== null) &&
-        (value !== '') &&
-        !isNaN(Number(value.toString())));
+export function updateEDSDescription(context: vscode.ExtensionContext, designSystemID: string, description: string) {
+    var dsList = context.globalState.get(dsListName);
+    if (Array.isArray(dsList)) {
+        for (let v of dsList) {
+            if (v.label === designSystemID) {
+                // Update the existing entry description
+                v.description = description;
+            }
+        }
+    }
 }
 
 //-----------------------------------------------------------------------------

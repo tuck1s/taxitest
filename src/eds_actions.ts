@@ -4,7 +4,7 @@ import * as vscode from 'vscode';
 
 // Local project imports
 import { getTaxiConfig } from './config';
-import { updateEDSBar, displayDiagnostics } from './ui';
+import { updateEDSBar, displayDiagnostics, updateEDSDescription} from './ui';
 import { userAgent, analytics } from './analytics';
 
 //-----------------------------------------------------------------------------
@@ -62,9 +62,12 @@ export function emailDesignSystemCall(context: vscode.ExtensionContext, dcoll: v
 						result = response.data; // Validate call returns in this specific format
 					} else if (verb === 'update') {
 						const rd = response.data;
-						console.log(`Updated ID=${rd.id}, name="${rd.name}", description="${rd.description}"`);
+						console.log(`Updated ID=${rd.id}, name="${rd.name}"`);
 						console.log(`created_at=${rd.created_at}, updated_at=${rd.updated_at}`);
-						// make it in same form as the Validation call
+						// Now we have the name - use it as the description on the QuickPicker
+						updateEDSDescription(context, designSystemID, rd.name);
+
+						// make result in same form as the Validation call
 						result = {
 							// eslint-disable-next-line @typescript-eslint/naming-convention
 							'total_errors': 0,
