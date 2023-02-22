@@ -35,19 +35,25 @@ export function askForEmailDesignSystemId(context: vscode.ExtensionContext, bar:
         quickPick.canSelectMany = false;
         quickPick.items = dsList;
         quickPick.title = 'Enter a design system ID, or select from list';
-        quickPick.onDidAccept(() => {
-            const selection = quickPick.activeItems[0];
-            console.log(selection);
-            quickPick.hide();
-        });
+
         quickPick.onDidChangeValue(() => {
+            // remove non-digit characters as invalid
+            quickPick.value = quickPick.value.replace(/\D/g,'');
+
+            // if this is a NEW value, add to the original pick list, as the first item
             const labels = quickPick.items.map(i => i.label); 
             if(!labels.includes(quickPick.value)) {
-                // add the new value to the original pick list, as the first item
-                const newItem = { 'label': quickPick.value, 'description': ''};
+                const newItem = { 'label': quickPick.value, 'description': '' };
                 quickPick.items = [newItem, ...dsList];
             }
         });
+
+        quickPick.onDidAccept(() => {
+            const selection = quickPick.activeItems[0];
+            setEmailDesignSystemId(context, bar, selection);
+            quickPick.hide();
+        });
+
         quickPick.onDidHide(() => quickPick.dispose());
         quickPick.show();
 
@@ -55,39 +61,32 @@ export function askForEmailDesignSystemId(context: vscode.ExtensionContext, bar:
         console.log(Error);
     }
 }
-/*
-        validateInput(value) {
-            return isNumber(value) ? null : 'Must be 0 .. 9';
-        },
-*/
 
-export async function setEmailDesignSystemId(context: vscode.ExtensionContext, bar: vscode.StatusBarItem, value?: string) {
+export async function setEmailDesignSystemId(context: vscode.ExtensionContext, bar: vscode.StatusBarItem, value: vscode.QuickPickItem) {
     if (value) {
         try {
-            const idNum = parseInt(value, 10);
+            const idNum = parseInt(value.label, 10);
             if (isNaN(idNum)) {
-                throw new Error(`Value ${value} parsed as NaN`);
+                throw new Error(`Value ${value.label} parsed as NaN`);
             }
-            const newEntry = { 'label': String(idNum), 'description': '' };
-
             // Get current list of IDs. Append new/chosen value to head of list - maintain in "Most Recently Used" order
             var dsList = context.globalState.get(dsListName);
             if (Array.isArray(dsList)) {
                 // Already got some entries
                 for (let v of dsList) {
-                    if (v.label === newEntry.label) {
+                    if (v.label === value.label) {
                         // preserve the existing description, now at the top of the list.
                         // mark the existing item placeholder for deletion. We can't delete it yet, or it would disrupt the for loop indexing.
-                        newEntry.description = v.description;
+                        value.description = v.description;
                         v.label = '';
                     }
                 }
                 // Append newEntry to head. Remove any existing entries now marked for deletion
                 // Limit to the max number of entries
-                dsList = [newEntry, ...dsList.filter(i => i.label !== '')].slice(0, maxdsListLen);
+                dsList = [value, ...dsList.filter(i => i.label !== '')].slice(0, maxdsListLen);
             }
             else {
-                dsList = [newEntry];
+                dsList = [value];
             }
             // debug
             if (Array.isArray(dsList)) {
@@ -96,7 +95,6 @@ export async function setEmailDesignSystemId(context: vscode.ExtensionContext, b
                 }
             }
             context.globalState.update(dsListName, dsList);
-            console.log(`Set EDS ID = ${dsList}`);
             updateEDSBar(bar, '');
         } catch (error) {
             console.log(`failure updating ${dsListName}: ${error}`);
