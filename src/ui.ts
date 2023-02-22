@@ -20,47 +20,74 @@ export function createStatusBarInput(context: vscode.ExtensionContext, bar: vsco
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('taxitest.setEDS', () => askForEmailDesignSystemId(bar));
+    let disposable = vscode.commands.registerCommand('taxitest.setEDS', () => askForEmailDesignSystemId(context, bar));
     context.subscriptions.push(disposable);
 }
 
-export function askForEmailDesignSystemId(bar: vscode.StatusBarItem) {
-    let options: vscode.InputBoxOptions = {
-        title: `Set Email Design System identifier`,
-        prompt: 'Numeric ID',
-        placeHolder: '123456',
+const dsListName = 'designSystemIdList';
+const maxdsListLen = 20;
+
+export function askForEmailDesignSystemId(context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
+    const dsList = context.globalState.get(dsListName);
+    try {
+        let items = dsList as vscode.QuickPickItem[];
+        let options: vscode.QuickPickOptions = {
+            'placeHolder': '123456',
+            'title': 'Enter a design system ID, or select from list',
+        };
+        vscode.window.showQuickPick(items, options).then(value => {
+            // setEmailDesignSystemId(context, bar, value);
+            console.log(value);
+        });
+    } catch (error) {
+        console.log(Error);
+    }
+}
+/*
         validateInput(value) {
             return isNumber(value) ? null : 'Must be 0 .. 9';
         },
-    };
-    vscode.window.showInputBox(options).then(value => {
-        askForImageFolder();
-        setEmailDesignSystemId(bar, value);
-    });
-}
+*/
 
-export function askForImageFolder() {
-    let items: vscode.QuickPickItem[] = [
-        { 'label': 'dogs' },
-        { 'label': 'cats' },
-        { 'label': 'horses' }
-    ];
-    vscode.window.showQuickPick(items).then(value => {
-        console.log(value);
-    });
-}
-
-export async function setEmailDesignSystemId(bar: vscode.StatusBarItem, value?: string) {
+export async function setEmailDesignSystemId(context: vscode.ExtensionContext, bar: vscode.StatusBarItem, value?: string) {
     if (value) {
-        const idNum = parseInt(value, 10);
         try {
-            const cfg = vscode.workspace.getConfiguration('taxi');
-            // null enables resource per workspace / workspace folder
-            await cfg.update('designSystemId', idNum, vscode.ConfigurationTarget.Global);
-            console.log(`Set EDS ID = ${idNum}`);
+            const idNum = parseInt(value, 10);
+            if(isNaN(idNum)) {
+                throw new Error(`Value ${value} parsed as NaN`);
+            }
+            const newEntry = { 'label': String(idNum), 'description': '' };
+
+            // Get current list of IDs. Append new/chosen value to head of list - maintain in "Most Recently Used" order
+            var dsList = context.globalState.get(dsListName);
+            if(Array.isArray(dsList)) {
+                // Already got some entries
+                for (let v of dsList) {
+                    if(v.label === newEntry.label) {
+                        // preserve the existing description, now at the top of the list.
+                        // mark the existing item placeholder for deletion. We can't delete it yet, or it would disrupt the for loop indexing.
+                        newEntry.description = v.description;
+                        v.label = '';
+                    }
+               }
+                // Append newEntry to head. Remove any existing entries now marked for deletion
+                // Limit to the max number of entries
+                dsList = [ newEntry, ... dsList.filter(i => i.label !== '') ].slice(0, maxdsListLen);
+            }
+            else {
+                dsList = [ newEntry ];                
+            }
+            // debug
+            if(Array.isArray(dsList)) {
+                for (let v of dsList) {
+                    console.log(v.label, v.description);
+                }
+            }
+            context.globalState.update(dsListName, dsList);          
+            console.log(`Set EDS ID = ${dsList}`);
             updateEDSBar(bar, '');
         } catch (error) {
-            console.log(`failure updating designSystemId / designSystemDescr: ${error}`);
+            console.log(`failure updating ${dsListName}: ${error}`);
         };
     }
 }
