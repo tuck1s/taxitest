@@ -199,10 +199,10 @@ export function displayDiagnostics(result: Result, doc: vscode.TextDocument, sta
 }
 
 //-----------------------------------------------------------------------------
-// Status bar Input item, allowing toggle of "import_images" and "without_review" flags.
+// Status bar items, allowing toggle of "import_images" and "without_review" flags.
 //-----------------------------------------------------------------------------
 
-// Simple  flags, use the text icon to carry boolean flag state 
+// Simple flags, use the text icon to represent the boolean flag state 
 const textFlagTrue = '$(pass-filled)';
 const textFlagFalse = '$(close)';
 
@@ -210,13 +210,13 @@ export function createStatusBarOptionFlagImportImages(context: vscode.ExtensionC
     bar.name = 'Taxi for Email Design System import_images toggle';
     bar.tooltip = 'Taxi for Email Design System import_images toggle';
     bar.command = 'taxitest.toggle_import_images';
-    initToggleBar(bar, 'import_images' + textFlagTrue);
+    initBarToggle(bar, 'import_images' + textFlagTrue);
     bar.show();
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand(bar.command, () => toggleFlagBar(bar));
+    let disposable = vscode.commands.registerCommand(bar.command, () => toggleBarFlag(bar));
     context.subscriptions.push(disposable);
 }
 
@@ -224,26 +224,26 @@ export function createStatusBarOptionFlagWithoutReview(context: vscode.Extension
     bar.name = 'Taxi for Email Design System without_review toggle';
     bar.tooltip = 'Taxi for Email Design System without_review toggle';
     bar.command = 'taxitest.toggle_without_review';
-    initToggleBar(bar, 'without_review' + textFlagFalse);
+    initBarToggle(bar, 'without_review' + textFlagFalse);
     bar.show();
 
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand(bar.command, () => toggleFlagBar(bar));
+    let disposable = vscode.commands.registerCommand(bar.command, () => toggleBarFlag(bar));
     context.subscriptions.push(disposable);
 }
 
-function initToggleBar( bar: vscode.StatusBarItem, txt: string) {
+function initBarToggle( bar: vscode.StatusBarItem, txt: string) {
     bar.text = txt;
 }
 
-function flagBarTrue(bar: vscode.StatusBarItem) : boolean {
+export function barFlagTrue(bar: vscode.StatusBarItem) : boolean {
     return bar.text.includes(textFlagTrue);
 }
 
-function toggleFlagBar(bar: vscode.StatusBarItem) {
-    if(flagBarTrue(bar)) {
+function toggleBarFlag(bar: vscode.StatusBarItem) {
+    if(barFlagTrue(bar)) {
         bar.text = bar.text.replace(textFlagTrue, textFlagFalse);
     } else {
         bar.text = bar.text.replace(textFlagFalse, textFlagTrue);

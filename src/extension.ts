@@ -21,17 +21,18 @@ export async function activate(context: vscode.ExtensionContext) : Promise<vscod
 	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
 	createStatusBarDesignSystemIDInput(context, bar);
 
-	createValidationAction(context, dcoll, bar);
-	createUpdateEDSAction(context, dcoll, bar);
+	let barImportImages = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9);
+	createStatusBarOptionFlagImportImages(context, barImportImages);
+
+	let barWithoutReview = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 8);
+	createStatusBarOptionFlagWithoutReview(context, barWithoutReview);
+
+	createValidationAction(context, dcoll, bar, barImportImages, barWithoutReview);
+	createUpdateEDSAction(context, dcoll, bar,  barImportImages, barWithoutReview);
+
 	analytics('activate');
 	cleanupObsoleteWorkspaceSpecificConfig('designSystemId');
 	cleanupObsoleteWorkspaceSpecificConfig('designSystemDescr');
-
-	let bar2 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9);
-	createStatusBarOptionFlagImportImages(context, bar2);
-
-	let bar3 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 8);
-	createStatusBarOptionFlagWithoutReview(context, bar3);
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');
@@ -48,20 +49,22 @@ export function deactivate() {
 //-----------------------------------------------------------------------------
 // Extension commands for validating and updating an EDS and displaying the diagnostic output
 //-----------------------------------------------------------------------------
-function createValidationAction(context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
+function createValidationAction(context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem, 
+	barImportImages: vscode.StatusBarItem, barWithoutReview: vscode.StatusBarItem) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('taxitest.validateEDS', () =>
-		emailDesignSystemCall(context, dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html'));
+		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'post', '/api/v1/eds/check', 'validate', 'html'));
 	context.subscriptions.push(disposable);
 }
 
-function createUpdateEDSAction(context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem) {
+function createUpdateEDSAction(context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem,
+	barImportImages: vscode.StatusBarItem, barWithoutReview: vscode.StatusBarItem) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with registerCommand
 	// The commandId parameter must match the command field in package.json
 	let disposable = vscode.commands.registerCommand('taxitest.updateEDS', () =>
-		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source'));
+		emailDesignSystemCall(context, dcoll, bar,  barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source'));
 	context.subscriptions.push(disposable);
 }

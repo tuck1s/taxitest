@@ -4,13 +4,14 @@ import * as vscode from 'vscode';
 
 // Local project imports
 import { getTaxiConfig } from './config';
-import { updateEDSBar, displayDiagnostics, updateEDSDescription} from './ui';
+import { updateEDSBar, displayDiagnostics, updateEDSDescription, barFlagTrue} from './ui';
 import { userAgent, analytics } from './analytics';
 
 //-----------------------------------------------------------------------------
 // General call handler for Validate and Update, as these are similar
 //-----------------------------------------------------------------------------
 export function emailDesignSystemCall(context: vscode.ExtensionContext, dcoll: vscode.DiagnosticCollection, bar: vscode.StatusBarItem,
+	barImportImages: vscode.StatusBarItem, barWithoutReview: vscode.StatusBarItem,
 	apiMethod: Method, apiEndpoint: string, verb: string, docAttribute: string): void {
 	// Gather credentials and settings. Need to refresh the local config object from persistent storage
 	const c = getTaxiConfig();
@@ -38,8 +39,8 @@ export function emailDesignSystemCall(context: vscode.ExtensionContext, dcoll: v
 	formData.append(docAttribute, docStream, { filename: fileName });
 	if (verb === 'update') {
 		formData.append('id', designSystemID);
-		formData.append('import_images', 'false');
-		formData.append('without_review', 'true');						// TODO: check if this is the most useful behaviour
+		formData.append('import_images', boolText(barFlagTrue(barImportImages)));
+		formData.append('without_review', boolText(barFlagTrue(barWithoutReview)));
 	}
 	var fh = formData.getHeaders();
 	fh['Accept'] = 'application/json';
@@ -140,3 +141,8 @@ export type Result = {
 	errors: Object,
 	warnings: Object,
 };
+
+// Convert internal boolean to external forms text representation
+function boolText(b: boolean): string {
+	return b ? 'true' : 'false';
+}

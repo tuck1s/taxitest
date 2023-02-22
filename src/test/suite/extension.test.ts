@@ -32,6 +32,9 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 	let dcoll = vscode.languages.createDiagnosticCollection('taxi');
 	let cfg = vscode.workspace.getConfiguration('taxi');
 	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
+	let barImportImages = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9);
+	let barWithoutReview = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 8);
+
 	let doc: vscode.TextDocument;
 	let context: vscode.ExtensionContext;
 
@@ -124,13 +127,13 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		let s = nock(String(cfg.get('uri')))
 			.post('/api/v1/eds/check')
 			.reply(200, 'OK');
-		emailDesignSystemCall(context, dcoll, bar, 'post', '/api/v1/eds/check', 'validate', 'html');
+		emailDesignSystemCall(context, dcoll, bar,  barImportImages, barWithoutReview, 'post', '/api/v1/eds/check', 'validate', 'html');
 
 		// Update
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 	});
 
@@ -139,7 +142,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		let s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'flump', 'source');
+		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'flump', 'source');
 		
 		// Unexpected response
 		s = nock(String(cfg.get('uri')))
@@ -147,7 +150,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			.reply(400, {
 				'message': 'unexpected item in bagging area'
 			});
-		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source');
 		// Syntax error response
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
@@ -169,14 +172,14 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 				}
 				}
 			});
-	  	emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+	  	emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// close active window - error condition
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
-		emailDesignSystemCall(context, dcoll, bar, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// Restore active window afterwards
 		doc = await vscode.workspace.openTextDocument({
