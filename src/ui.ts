@@ -28,17 +28,29 @@ const dsListName = 'designSystemIdList';
 const maxdsListLen = 20;
 
 export function askForEmailDesignSystemId(context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
-    const dsList = context.globalState.get(dsListName);
     try {
-        let items = dsList as vscode.QuickPickItem[];
-        let options: vscode.QuickPickOptions = {
-            'placeHolder': '123456',
-            'title': 'Enter a design system ID, or select from list',
-        };
-        vscode.window.showQuickPick(items, options).then(value => {
-            // setEmailDesignSystemId(context, bar, value);
-            console.log(value);
+        const dsList = context.globalState.get(dsListName) as vscode.QuickPickItem[];
+        const quickPick = vscode.window.createQuickPick();
+        quickPick.placeholder = '123456';
+        quickPick.canSelectMany = false;
+        quickPick.items = dsList;
+        quickPick.title = 'Enter a design system ID, or select from list';
+        quickPick.onDidAccept(() => {
+            const selection = quickPick.activeItems[0];
+            console.log(selection);
+            quickPick.hide();
         });
+        quickPick.onDidChangeValue(() => {
+            const labels = quickPick.items.map(i => i.label); 
+            if(!labels.includes(quickPick.value)) {
+                // add the new value to the original pick list, as the first item
+                const newItem = { 'label': quickPick.value, 'description': ''};
+                quickPick.items = [newItem, ...dsList];
+            }
+        });
+        quickPick.onDidHide(() => quickPick.dispose());
+        quickPick.show();
+
     } catch (error) {
         console.log(Error);
     }
@@ -53,37 +65,37 @@ export async function setEmailDesignSystemId(context: vscode.ExtensionContext, b
     if (value) {
         try {
             const idNum = parseInt(value, 10);
-            if(isNaN(idNum)) {
+            if (isNaN(idNum)) {
                 throw new Error(`Value ${value} parsed as NaN`);
             }
             const newEntry = { 'label': String(idNum), 'description': '' };
 
             // Get current list of IDs. Append new/chosen value to head of list - maintain in "Most Recently Used" order
             var dsList = context.globalState.get(dsListName);
-            if(Array.isArray(dsList)) {
+            if (Array.isArray(dsList)) {
                 // Already got some entries
                 for (let v of dsList) {
-                    if(v.label === newEntry.label) {
+                    if (v.label === newEntry.label) {
                         // preserve the existing description, now at the top of the list.
                         // mark the existing item placeholder for deletion. We can't delete it yet, or it would disrupt the for loop indexing.
                         newEntry.description = v.description;
                         v.label = '';
                     }
-               }
+                }
                 // Append newEntry to head. Remove any existing entries now marked for deletion
                 // Limit to the max number of entries
-                dsList = [ newEntry, ... dsList.filter(i => i.label !== '') ].slice(0, maxdsListLen);
+                dsList = [newEntry, ...dsList.filter(i => i.label !== '')].slice(0, maxdsListLen);
             }
             else {
-                dsList = [ newEntry ];                
+                dsList = [newEntry];
             }
             // debug
-            if(Array.isArray(dsList)) {
+            if (Array.isArray(dsList)) {
                 for (let v of dsList) {
                     console.log(v.label, v.description);
                 }
             }
-            context.globalState.update(dsListName, dsList);          
+            context.globalState.update(dsListName, dsList);
             console.log(`Set EDS ID = ${dsList}`);
             updateEDSBar(bar, '');
         } catch (error) {
@@ -120,57 +132,56 @@ function isNumber(value: string | number): boolean {
 // Diagnostics output
 //-----------------------------------------------------------------------------
 
-
 export function sanitizeLinebreaks(s: string): string {
-	return s.replace(/[\r\n]+/g, ' ');
+    return s.replace(/[\r\n]+/g, ' ');
 }
 
 export function makeDiagnostic(d: ResultDetails, doc: vscode.TextDocument): vscode.Diagnostic {
-	// Get line number directly from the result details
-	var rng = new vscode.Range(0, 0, 0, 100); // default
-	if (d.line) {
-		// now find out actual length of this line in the doc. VS code lines start from 0 up.
-		rng = doc.lineAt(d.line - 1).range;
-	}
-	// The type string gives the severity - default to "information" unless ERROR or WARN
-	var sev = vscode.DiagnosticSeverity.Information;
-	switch (d.type.toUpperCase()) {
-		case 'WARN':
-			sev = vscode.DiagnosticSeverity.Warning;
-			break;
+    // Get line number directly from the result details
+    var rng = new vscode.Range(0, 0, 0, 100); // default
+    if (d.line) {
+        // now find out actual length of this line in the doc. VS code lines start from 0 up.
+        rng = doc.lineAt(d.line - 1).range;
+    }
+    // The type string gives the severity - default to "information" unless ERROR or WARN
+    var sev = vscode.DiagnosticSeverity.Information;
+    switch (d.type.toUpperCase()) {
+        case 'WARN':
+            sev = vscode.DiagnosticSeverity.Warning;
+            break;
 
-		case 'ERROR':
-			sev = vscode.DiagnosticSeverity.Error;
-			break;
-	}
-	let diagString = sanitizeLinebreaks(d.message) + ': ' + sanitizeLinebreaks(d.details);
-	if (d.element) {
-		diagString += '\n' + d.element;
-	}
-	let diag = new vscode.Diagnostic(rng, diagString, sev);
-	diag.source = 'taxi';
-	return diag;
+        case 'ERROR':
+            sev = vscode.DiagnosticSeverity.Error;
+            break;
+    }
+    let diagString = sanitizeLinebreaks(d.message) + ': ' + sanitizeLinebreaks(d.details);
+    if (d.element) {
+        diagString += '\n' + d.element;
+    }
+    let diag = new vscode.Diagnostic(rng, diagString, sev);
+    diag.source = 'taxi';
+    return diag;
 }
 
 export function displayDiagnostics(result: Result, doc: vscode.TextDocument, startTime: Date, showSummary: boolean, verb: string): vscode.Diagnostic[] {
-	// Iterate through errors and warnings together, as each object has a type attribute
-	// concat results into a single array, for ease of iteration
-	// verb is a reporting nicety - e.g. "validated", "updated", "created" etc
-	let diags: vscode.Diagnostic[] = [];
-	// parse errors first, then warnings, as this is the most useful order of presentation
-	let combined: ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
-	for (const e of combined) {
-		const diag = makeDiagnostic(e, doc);
-		diags.push(diag);
-	}
-	// If enabled, show a final informational diagnostic, showing errors, warnings, and run-time.
-	if (showSummary) {
-		const lastLine = doc.lineCount;
-		const endTime = new Date();
-		const endTimeStr = endTime.toLocaleTimeString([], { hour12: false });
-		const duration = (endTime.getTime() - startTime.getTime()) / 1000;
-		const summary = `At ${endTimeStr}, Taxi for Email ${verb}: ${lastLine} lines, found ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
-		diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
-	}
-	return diags;
+    // Iterate through errors and warnings together, as each object has a type attribute
+    // concat results into a single array, for ease of iteration
+    // verb is a reporting nicety - e.g. "validated", "updated", "created" etc
+    let diags: vscode.Diagnostic[] = [];
+    // parse errors first, then warnings, as this is the most useful order of presentation
+    let combined: ResultDetails[] = Object.values(result.errors).concat(Object.values(result.warnings));
+    for (const e of combined) {
+        const diag = makeDiagnostic(e, doc);
+        diags.push(diag);
+    }
+    // If enabled, show a final informational diagnostic, showing errors, warnings, and run-time.
+    if (showSummary) {
+        const lastLine = doc.lineCount;
+        const endTime = new Date();
+        const endTimeStr = endTime.toLocaleTimeString([], { hour12: false });
+        const duration = (endTime.getTime() - startTime.getTime()) / 1000;
+        const summary = `At ${endTimeStr}, Taxi for Email ${verb}: ${lastLine} lines, found ${result.total_errors} errors, ${result.total_warnings} warnings, in ${duration} seconds.`;
+        diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
+    }
+    return diags;
 }
