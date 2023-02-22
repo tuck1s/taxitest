@@ -9,7 +9,7 @@ import * as nock from 'nock';
 // Local project imports
 import { cleanupObsoleteWorkspaceSpecificConfig  } from '../../config';
 import { analytics }  from '../../analytics';
-import { askForEmailDesignSystemId, createStatusBarInput, setEmailDesignSystemId, displayDiagnostics } from '../../ui';
+import { askForEmailDesignSystemId, createStatusBarDesignSystemIDInput, setEmailDesignSystemId, displayDiagnostics } from '../../ui';
 import { emailDesignSystemCall, Result, ResultDetails } from '../../eds_actions';
 
 // Calculated expected length of an API result, with/without summary

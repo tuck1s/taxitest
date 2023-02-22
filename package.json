@@ -32,6 +32,14 @@
 			{
 				"command": "taxitest.updateEDS",
 				"title": "Taxi for Email - update Email Design System"
+			},
+			{
+				"command": "taxitest.toggle_import_images",
+				"title": "Taxi for Email - toggle import_images"
+			},
+			{
+				"command": "taxitest.toggle_without_review",
+				"title": "Taxi for Email - toggle without_review"
 			}
 		],
 		"configuration": [

@@ -5,7 +5,7 @@ import * as vscode from 'vscode';
 // Local project imports
 import { cleanupObsoleteWorkspaceSpecificConfig  } from './config';
 import { analytics }  from './analytics';
-import { createStatusBarInput } from './ui';
+import { createStatusBarDesignSystemIDInput, createStatusBarOptionFlagImportImages, createStatusBarOptionFlagWithoutReview } from './ui';
 import { emailDesignSystemCall } from './eds_actions';
 
 
@@ -19,12 +19,19 @@ export async function activate(context: vscode.ExtensionContext) : Promise<vscod
 	let dcoll = vscode.languages.createDiagnosticCollection('taxi');
 
 	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
-	createStatusBarInput(context, bar);
+	createStatusBarDesignSystemIDInput(context, bar);
+
 	createValidationAction(context, dcoll, bar);
 	createUpdateEDSAction(context, dcoll, bar);
 	analytics('activate');
 	cleanupObsoleteWorkspaceSpecificConfig('designSystemId');
 	cleanupObsoleteWorkspaceSpecificConfig('designSystemDescr');
+
+	let bar2 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 9);
+	createStatusBarOptionFlagImportImages(context, bar2);
+
+	let bar3 = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 8);
+	createStatusBarOptionFlagWithoutReview(context, bar3);
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');

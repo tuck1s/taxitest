@@ -5,13 +5,12 @@ import { Result, ResultDetails } from './eds_actions';
 
 //-----------------------------------------------------------------------------
 // Status bar Input item, allowing a selectable Taxi Email Design System ID.
-// As the Taxi API cannot currently return the text description of an EDS, we hold
-// a text description in the local workspace. This should be eventually removed when
-// the API supports description texts.
+// Taxi API return the text name of an EDS in the response to an update, so we reflect that into
+// the local workspace.
 //-----------------------------------------------------------------------------
-export function createStatusBarInput(context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
-    bar.name = 'Taxi for Email Design System';
-    bar.tooltip = 'Taxi for Email Design System';
+export function createStatusBarDesignSystemIDInput(context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
+    bar.name = 'Taxi EDS';
+    bar.tooltip = 'Taxi for Email: Set Design System ID';
     bar.command = 'taxitest.setEDS';
     updateEDSBar(context, bar, '');
     bar.show();
@@ -19,7 +18,7 @@ export function createStatusBarInput(context: vscode.ExtensionContext, bar: vsco
     // The command has been defined in the package.json file
     // Now provide the implementation of the command with registerCommand
     // The commandId parameter must match the command field in package.json
-    let disposable = vscode.commands.registerCommand('taxitest.setEDS', () => askForEmailDesignSystemId(context, bar));
+    let disposable = vscode.commands.registerCommand(bar.command, () => askForEmailDesignSystemId(context, bar));
     context.subscriptions.push(disposable);
 }
 
@@ -197,4 +196,56 @@ export function displayDiagnostics(result: Result, doc: vscode.TextDocument, sta
         diags.push(new vscode.Diagnostic(new vscode.Range(lastLine, 0, lastLine, 1), summary, vscode.DiagnosticSeverity.Information));
     }
     return diags;
+}
+
+//-----------------------------------------------------------------------------
+// Status bar Input item, allowing toggle of "import_images" and "without_review" flags.
+//-----------------------------------------------------------------------------
+
+// Simple  flags, use the text icon to carry boolean flag state 
+const textFlagTrue = '$(pass-filled)';
+const textFlagFalse = '$(close)';
+
+export function createStatusBarOptionFlagImportImages(context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
+    bar.name = 'Taxi for Email Design System import_images toggle';
+    bar.tooltip = 'Taxi for Email Design System import_images toggle';
+    bar.command = 'taxitest.toggle_import_images';
+    initToggleBar(bar, 'import_images' + textFlagTrue);
+    bar.show();
+
+    // The command has been defined in the package.json file
+    // Now provide the implementation of the command with registerCommand
+    // The commandId parameter must match the command field in package.json
+    let disposable = vscode.commands.registerCommand(bar.command, () => toggleFlagBar(bar));
+    context.subscriptions.push(disposable);
+}
+
+export function createStatusBarOptionFlagWithoutReview(context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
+    bar.name = 'Taxi for Email Design System without_review toggle';
+    bar.tooltip = 'Taxi for Email Design System without_review toggle';
+    bar.command = 'taxitest.toggle_without_review';
+    initToggleBar(bar, 'without_review' + textFlagFalse);
+    bar.show();
+
+    // The command has been defined in the package.json file
+    // Now provide the implementation of the command with registerCommand
+    // The commandId parameter must match the command field in package.json
+    let disposable = vscode.commands.registerCommand(bar.command, () => toggleFlagBar(bar));
+    context.subscriptions.push(disposable);
+}
+
+function initToggleBar( bar: vscode.StatusBarItem, txt: string) {
+    bar.text = txt;
+}
+
+function flagBarTrue(bar: vscode.StatusBarItem) : boolean {
+    return bar.text.includes(textFlagTrue);
+}
+
+function toggleFlagBar(bar: vscode.StatusBarItem) {
+    if(flagBarTrue(bar)) {
+        bar.text = bar.text.replace(textFlagTrue, textFlagFalse);
+    } else {
+        bar.text = bar.text.replace(textFlagFalse, textFlagTrue);
+    }
 }
