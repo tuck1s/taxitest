@@ -10,7 +10,7 @@ import { emailDesignSystemCall } from './eds_actions';
 
 
 // this method is called when your extension is activated (after startup)
-export async function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) : Promise<vscode.ExtensionContext> {
 	// Make a diagnostics collection output. Done once when registering the command, so all results go to the same collection,
 	// clearing previous results as the tool is subsequently run.
 	//
@@ -28,6 +28,9 @@ export async function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
 	console.log('Extension taxitest.validateEDS is now active. Run from the Command Palette.');
+
+	// return the context just to enable mocha tests
+	return context;
 }
 
 // this method is called when your extension is deactivated

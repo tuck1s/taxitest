@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 
 // Local project imports
-import { getTaxiConfig } from './config';
 import { Result, ResultDetails } from './eds_actions';
 
 //-----------------------------------------------------------------------------
@@ -97,7 +96,6 @@ export async function setEmailDesignSystemId(context: vscode.ExtensionContext, b
 
             // write the list to persistent storage and update the UI
             await context.globalState.update(dsListName, dsList);
-            await context.globalState.update(dsListName, null);
             updateEDSBar(context, bar, '');
         } catch (error) {
             console.log(`failure updating ${dsListName}: ${error}`);
@@ -108,26 +106,27 @@ export async function setEmailDesignSystemId(context: vscode.ExtensionContext, b
 // Reads current design system from top of list
 export function updateEDSBar(context: vscode.ExtensionContext, bar: vscode.StatusBarItem, decoration: string): string {
     bar.text = 'EDS: ';
-    var designSystemID = '';
     // Refresh the local view from persistent storage
     var dsList = context.globalState.get(dsListName);
     if (Array.isArray(dsList)) {
         const top = dsList[0];
         if(top && top.hasOwnProperty('label')) {
-            designSystemID = top.label;
+            const designSystemID = top.label;
             bar.backgroundColor = new vscode.ThemeColor('statusBarItem.background');
             bar.text += designSystemID;
-            if (top.hasOwnProperty('label') && top.description) {
+
+            // show optional description
+            if (top.hasOwnProperty('description') && top.description) {
                 bar.text += `; ` + top.description;	// add optional description
             }
+            bar.text += decoration;
+            return designSystemID;
         }
     }
-    else {
-        bar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
-        bar.text += 'Click to set';
-    }
-    bar.text += decoration;
-    return designSystemID;
+    // Otherwise, show warning color
+    bar.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground');
+    bar.text += 'Click to set';
+    return '';
 }
 
 export function updateEDSDescription(context: vscode.ExtensionContext, designSystemID: string, description: string) {

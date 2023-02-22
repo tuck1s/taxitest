@@ -33,12 +33,20 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 	let cfg = vscode.workspace.getConfiguration('taxi');
 	let bar = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 10);
 	let doc: vscode.TextDocument;
+	let context: vscode.ExtensionContext;
 
 	suiteSetup(async () => {
 		doc = await vscode.workspace.openTextDocument({
 			content: 'The quick brown fox',
 		});
 		const ed = await vscode.window.showTextDocument(doc);
+
+		// Set up the Extension Context for persistent storage etc
+		const ext = vscode.extensions.getExtension("tuck1s.taxi-for-email-validate-upload");
+		if(ext) {
+			context = await ext.activate();
+		}
+
 	});
 
 	suiteTeardown(async () => {
