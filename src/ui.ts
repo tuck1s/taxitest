@@ -102,9 +102,11 @@ export async function setEmailDesignSystemId(context: vscode.ExtensionContext, b
     }
 }
 
+const maxBarTextLength = 24;
+
 // Reads current design system from top of list
 export function updateEDSBar(context: vscode.ExtensionContext, bar: vscode.StatusBarItem, decoration: string): string {
-    bar.text = 'EDS: ';
+    bar.text = 'EDS ';
     // Refresh the local view from persistent storage
     var dsList = context.globalState.get(dsListName);
     if (Array.isArray(dsList)) {
@@ -116,7 +118,13 @@ export function updateEDSBar(context: vscode.ExtensionContext, bar: vscode.Statu
 
             // show optional description
             if (top.hasOwnProperty('description') && top.description) {
-                bar.text += `; ` + top.description;	// add optional description
+                // Bound the description text length, add ellipsis at the end if truncated
+                if (top.description.length >= maxBarTextLength) {
+                    bar.text += ':' + top.description.slice(0, maxBarTextLength-1) + '…';
+                } else {
+                    bar.text += ':' + top.description;	// add optional description
+                }
+    
             }
             bar.text += decoration;
             return designSystemID;
@@ -210,7 +218,7 @@ export function createStatusBarOptionFlagImportImages(context: vscode.ExtensionC
     bar.name = 'Taxi for Email Design System import_images toggle';
     bar.tooltip = 'Taxi for Email Design System import_images toggle';
     bar.command = 'taxitest.toggle_import_images';
-    initBarToggle(bar, 'import_images' + textFlagTrue);
+    initBarToggle(bar, '$(eye)' + textFlagTrue);
     bar.show();
 
     // The command has been defined in the package.json file
@@ -224,7 +232,7 @@ export function createStatusBarOptionFlagWithoutReview(context: vscode.Extension
     bar.name = 'Taxi for Email Design System without_review toggle';
     bar.tooltip = 'Taxi for Email Design System without_review toggle';
     bar.command = 'taxitest.toggle_without_review';
-    initBarToggle(bar, 'without_review' + textFlagFalse);
+    initBarToggle(bar, '$(comment-discussion)' + textFlagFalse);
     bar.show();
 
     // The command has been defined in the package.json file
