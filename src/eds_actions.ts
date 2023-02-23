@@ -47,7 +47,7 @@ export function emailDesignSystemCall(context: vscode.ExtensionContext, dcoll: v
 	fh['X-KEY-ID'] = c.keyID;
 	fh['X-API-KEY'] = c.apiKey;
 	fh['User-Agent'] = userAgent();
-	analytics(c.uri + apiEndpoint);
+	analytics(c.uri + apiEndpoint, vscode.env.isTelemetryEnabled);
 
 	axios({
 		method: apiMethod,

@@ -7,10 +7,11 @@ import * as taxi from '../../extension';
 import * as nock from 'nock';
 
 // Local project imports
-import { cleanupObsoleteWorkspaceSpecificConfig  } from '../../config';
-import { analytics }  from '../../analytics';
-import { askForEmailDesignSystemId, createStatusBarDesignSystemIDInput, setEmailDesignSystemId, displayDiagnostics } from '../../ui';
+import { cleanupObsoleteWorkspaceSpecificConfig } from '../../config';
+import { analytics, analyticsUri } from '../../analytics';
+import { askForEmailDesignSystemId, createStatusBarDesignSystemIDInput, setEmailDesignSystemId, displayDiagnostics, dsListName } from '../../ui';
 import { emailDesignSystemCall, Result, ResultDetails } from '../../eds_actions';
+import { isArray } from 'util';
 
 // Calculated expected length of an API result, with/without summary
 function expectedLength(result: Result, summary: boolean): number {
@@ -46,7 +47,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 
 		// Set up the Extension Context for persistent storage etc
 		const ext = vscode.extensions.getExtension("tuck1s.taxi-for-email-validate-upload");
-		if(ext) {
+		if (ext) {
 			context = await ext.activate();
 		}
 
@@ -127,7 +128,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		let s = nock(String(cfg.get('uri')))
 			.post('/api/v1/eds/check')
 			.reply(200, 'OK');
-		emailDesignSystemCall(context, dcoll, bar,  barImportImages, barWithoutReview, 'post', '/api/v1/eds/check', 'validate', 'html');
+		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'post', '/api/v1/eds/check', 'validate', 'html');
 
 		// Update
 		s = nock(String(cfg.get('uri')))
@@ -143,14 +144,21 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			.patch('/api/v1/eds/update')
 			.reply(200, 'OK');
 		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'flump', 'source');
-		
-		// Unexpected response
+
+		// Error response
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
 			.reply(400, {
 				'message': 'unexpected item in bagging area'
 			});
 		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source');
+
+		// Unexpected response
+		s = nock(String(cfg.get('uri')))
+			.patch('/api/v1/eds/update')
+			.reply(201, 'unexpected');
+		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source');
+
 		// Syntax error response
 		s = nock(String(cfg.get('uri')))
 			.patch('/api/v1/eds/update')
@@ -158,21 +166,21 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 				'message': 'The given HTML file contains syntax errors',
 				// eslint-disable-next-line @typescript-eslint/naming-convention
 				'syntax_errors': {
-				// eslint-disable-next-line @typescript-eslint/naming-convention
-				'1': {
-					'type': 'ERROR',
-					'message': 'module Element has no name',
-					'details': 'module elements must have a name= attribute',
-					'element': [
-					[
-						'taxi-full-name',
-						'modules[]'
-					]
-					]
-				}
+					// eslint-disable-next-line @typescript-eslint/naming-convention
+					'1': {
+						'type': 'ERROR',
+						'message': 'module Element has no name',
+						'details': 'module elements must have a name= attribute',
+						'element': [
+							[
+								'taxi-full-name',
+								'modules[]'
+							]
+						]
+					}
 				}
 			});
-	  	emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source');
+		emailDesignSystemCall(context, dcoll, bar, barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source');
 
 		// close active window - error condition
 		await vscode.commands.executeCommand('workbench.action.closeActiveEditor');
@@ -186,14 +194,41 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 			content: 'The quick brown fox'
 		});
 		await vscode.window.showTextDocument(doc);
-});
+	});
 
-/*
+
 	test('ID update', async () => {
 		askForEmailDesignSystemId(context, bar);
 
-		setEmailDesignSystemId(context, bar, '123456');
-		// TODO: Check setting worked
-});
-*/
+		const id: vscode.QuickPickItem = { 'label': '987654', 'description': 'fred' };
+		await setEmailDesignSystemId(context, bar, id);
+
+		const chk = context.globalState.get(dsListName);
+		if (Array.isArray(chk)) {
+			const x = chk[0];
+			assert.notStrictEqual(x, id);
+		} else {
+			assert.fail('ID update unexpected');
+		}
+	});
+
+	test('analytics', async () => {
+		let s = nock(analyticsUri)
+			.get(/.*/)
+			.reply(201, 'Unexpected');
+		await analytics('automated_test1', true);
+
+		// This test takes the "error" path from the Axios call
+		s = nock(analyticsUri)
+			.get(/.*/)
+			.reply(499, 'Error');
+		await analytics('automated_test2', true);
+	});
+
+	test('config', async () => {
+		// Make the config dirty, then clean it
+		const id = 'designSystemId';
+		cleanupObsoleteWorkspaceSpecificConfig(id);
+	});
+
 });

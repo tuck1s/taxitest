@@ -1,7 +1,7 @@
 {
     "all": true,
     "include": [
-        "out/extension.*"
+        "out/*"
     ],
     "exclude": [
         "**/node_modules/**",
@@ -9,7 +9,7 @@
     ],
     "reporter": [
         "text",
-        "html"
+        "lcov"
     ],
     "lines": 85,
     "branches": 80,

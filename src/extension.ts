@@ -30,7 +30,7 @@ export async function activate(context: vscode.ExtensionContext) : Promise<vscod
 	createValidationAction(context, dcoll, bar, barImportImages, barWithoutReview);
 	createUpdateEDSAction(context, dcoll, bar,  barImportImages, barWithoutReview);
 
-	analytics('activate');
+	analytics('activate', vscode.env.isTelemetryEnabled);
 	cleanupObsoleteWorkspaceSpecificConfig('designSystemId');
 	cleanupObsoleteWorkspaceSpecificConfig('designSystemDescr');
 
@@ -43,7 +43,7 @@ export async function activate(context: vscode.ExtensionContext) : Promise<vscod
 
 // this method is called when your extension is deactivated
 export function deactivate() {
-	analytics('deactivate');
+	analytics('deactivate', vscode.env.isTelemetryEnabled);
 }
 
 //-----------------------------------------------------------------------------

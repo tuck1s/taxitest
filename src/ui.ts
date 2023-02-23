@@ -22,7 +22,7 @@ export function createStatusBarDesignSystemIDInput(context: vscode.ExtensionCont
     context.subscriptions.push(disposable);
 }
 
-const dsListName = 'designSystemIdList';
+export const dsListName = 'designSystemIdList';
 const maxdsListLen = 20;
 
 export function askForEmailDesignSystemId(context: vscode.ExtensionContext, bar: vscode.StatusBarItem) {
