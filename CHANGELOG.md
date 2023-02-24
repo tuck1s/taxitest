@@ -2,8 +2,12 @@
 
 The release version number is in [`package.json`](package.json).
 
-## [Unreleased]
-- Analytics logged on usage.
+## [0.1.3] - 2022-03-24
+- Improved UI (QuickPick of most recently used) to select the Design System ID.
+- Automatic display of the Design System "name" via the QuickPick, once an update has been done.
+- Status bar toggles to control "upload_images" and "without_review" API. features.
+- Basic telemetry logged on usage, obeying VS Code user's telemetry settings.
+- README details.
 
 ## [0.1.2] - 2022-10-31
 - Working upload feature.
