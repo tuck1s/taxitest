@@ -17,11 +17,3 @@ export function getTaxiConfig(): Config {
         showSummary: !!cfg.get('showSummary'),			// solidify the type here
     };
 }
-
-// No longer recording certain items in workspace config as per request from Ben Tweedy
-export async function cleanupObsoleteWorkspaceSpecificConfig(id: string) {
-    const cfg = vscode.workspace.getConfiguration('taxi');
-    if (cfg.get(id)) {
-        await cfg.update(id, undefined);
-    }
-}

@@ -3,15 +3,13 @@ import * as assert from 'assert';
 // You can import and use all API from the 'vscode' module
 // as well as import your extension to test it
 import * as vscode from 'vscode';
-import * as taxi from '../../extension';
 import * as nock from 'nock';
 
 // Local project imports
-import { cleanupObsoleteWorkspaceSpecificConfig } from '../../config';
+import { cleanupObsoleteWorkspaceSpecificConfig } from '../../extension';
 import { analytics, analyticsUri } from '../../analytics';
 import { askForEmailDesignSystemId, createStatusBarDesignSystemIDInput, setEmailDesignSystemId, displayDiagnostics, dsListName } from '../../ui';
 import { emailDesignSystemCall, Result, ResultDetails } from '../../eds_actions';
-import { isArray } from 'util';
 
 // Calculated expected length of an API result, with/without summary
 function expectedLength(result: Result, summary: boolean): number {
@@ -200,16 +198,49 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 	test('ID update', async () => {
 		askForEmailDesignSystemId(context, bar);
 
-		const id: vscode.QuickPickItem = { 'label': '987654', 'description': 'fred' };
+		// we don't have a description at the UI entry stage
+		let id: vscode.QuickPickItem = { 'label': '987654', 'description': undefined };
 		await setEmailDesignSystemId(context, bar, id);
 
-		const chk = context.globalState.get(dsListName);
+		let chk = context.globalState.get(dsListName);
 		if (Array.isArray(chk)) {
-			const x = chk[0];
-			assert.notStrictEqual(x, id);
+			const x: vscode.QuickPickItem = chk[0];
+			// Need to use "deep" comparison & JSON munging because they are same values, different objects - see
+			// https://stackoverflow.com/questions/13225274/the-difference-between-assert-equal-and-assert-deepequal-in-javascript-testing-w
+			assert.deepStrictEqual(JSON.stringify(x), JSON.stringify(id));
 		} else {
 			assert.fail('ID update unexpected');
 		}
+
+		// Faulty inputs
+		let idFaulty: vscode.QuickPickItem = { 'label': 'not a number', 'description': undefined };
+		await setEmailDesignSystemId(context, bar, idFaulty);
+
+		chk = context.globalState.get(dsListName);
+		if (Array.isArray(chk)) {
+			const x: vscode.QuickPickItem = chk[0];
+			assert.deepStrictEqual(JSON.stringify(x), JSON.stringify(id));
+		} else {
+			assert.fail('ID update unexpected');
+		}
+	});
+
+	test('ID update - another entry', async () => {
+		// Add another entry
+		let id: vscode.QuickPickItem = { 'label': '678123', 'description': undefined };
+		await setEmailDesignSystemId(context, bar, id);
+
+		let chk = context.globalState.get(dsListName);
+		if (Array.isArray(chk)) {
+			const x: vscode.QuickPickItem = chk[0];
+			// Need to use "deep" comparison & JSON munging because they are same values, different objects - see
+			// https://stackoverflow.com/questions/13225274/the-difference-between-assert-equal-and-assert-deepequal-in-javascript-testing-w
+			assert.deepStrictEqual(JSON.stringify(x), JSON.stringify(id));
+			assert.strictEqual(chk.length >= 2, true);
+		} else {
+			assert.fail('ID update unexpected');
+		}
+
 	});
 
 	test('analytics', async () => {
@@ -227,8 +258,9 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 
 	test('config', async () => {
 		// Make the config dirty, then clean it
-		const id = 'designSystemId';
+		const id = 'fred';
 		cleanupObsoleteWorkspaceSpecificConfig(id);
 	});
 
+	// End of tests
 });

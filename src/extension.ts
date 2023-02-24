@@ -3,7 +3,6 @@
 import * as vscode from 'vscode';
 
 // Local project imports
-import { cleanupObsoleteWorkspaceSpecificConfig  } from './config';
 import { analytics }  from './analytics';
 import { createStatusBarDesignSystemIDInput, createStatusBarOptionFlagImportImages, createStatusBarOptionFlagWithoutReview } from './ui';
 import { emailDesignSystemCall } from './eds_actions';
@@ -67,4 +66,12 @@ function createUpdateEDSAction(context: vscode.ExtensionContext, dcoll: vscode.D
 	let disposable = vscode.commands.registerCommand('taxitest.updateEDS', () =>
 		emailDesignSystemCall(context, dcoll, bar,  barImportImages, barWithoutReview, 'patch', '/api/v1/eds/update', 'update', 'source'));
 	context.subscriptions.push(disposable);
+}
+
+// No longer recording certain items in workspace config as per request from Ben Tweedy
+export async function cleanupObsoleteWorkspaceSpecificConfig(id: string) {
+    const cfg = vscode.workspace.getConfiguration('taxi');
+    if (cfg.get(id)) {
+        await cfg.update(id, undefined);
+    }
 }
