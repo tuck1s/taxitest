@@ -1,5 +1,5 @@
 {
-	"name": "taxi-for-email-validate",
+	"name": "taxi-for-email-validator",
 	"displayName": "Taxi for Email EDS validate and upload",
 	"description": "Validate Email Design System (EDS) syntax and upload EDS files",
 	"version": "0.1.3",
