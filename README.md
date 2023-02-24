@@ -27,7 +27,7 @@ When a current EDS id has not been set, the status bar shows as:
 
 ![Taxi status bar](images/taxi-status-bar-blank.png)
 
-Click this area to set a numeric ID. You can also add a text description after a semi-colon.
+Click this area to set a numeric ID. This is needed to update the design system(s) held by Taxi.
 
 While actions are running, the status bar shows an animated 'sync' icon.
 
@@ -59,9 +59,34 @@ Note the Informational line the end, showing how lines of code checked, error an
 
 ## Updating an existing Email Design System
 
-Run this from the command palette, or map to a shortcut key. After the upload is complete, the "problems" window is updated with the errors/warnings report on your EDS.
+First, ensure you have set the correct Design System ID, by clicking on the status bar. A "quick pick" list of up to 20 recently-used design system IDs is shown. Type in the ID, or Choose an existing one.
 
-If you try to update an EDS without any actual file changes, Taxi returns an error message:
+![Taxi select ID](images/taxi-enter-id.png)
+
+Trigger the update from the command palette, or map to a shortcut key. After the upload is complete, the "problems" window is updated with the errors/warnings report on your EDS.
+
+Once you've updated, the "name" of the design system will appear in this list, and on the status bar.
+
+![Taxi design system name](images/taxi-status-bar-name.png)
+
+### Option "import_images"
+
+The "eye" icon on the toolbar is checked by default, each time you start VS Code. This indicates you want the design system to have accompanying images. These can be uploaded via ZIP file manually (outside of this extension).
+
+### Option "without_review"
+
+This icon on the toolbar is **un**checked by default. The upload will cause the Taxi UI to show this on your design system:
+
+![Taxi review](images/taxi-review2.png)
+
+Choose "Continue" to progress this.
+
+If "without_review" is checked, the upload will appear to take longer (~1 minute for a 5000 line file) as it's doing the syntax checking immediately. The design system will progress to the "Ready to be used" stage on the Taxi UI without further interaction.
+
+
+### Display of error messages
+
+For example, if you try to update an EDS without any actual file changes, Taxi returns an error message:
 
 ![Taxi update - identical, error message](images/taxi-update-identical-err.png)
 
