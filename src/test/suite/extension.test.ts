@@ -10,6 +10,7 @@ import { cleanupObsoleteWorkspaceSpecificConfig } from '../../extension';
 import { analytics, analyticsUri } from '../../analytics';
 import { askForEmailDesignSystemId, createStatusBarDesignSystemIDInput, setEmailDesignSystemId, displayDiagnostics, dsListName } from '../../ui';
 import { emailDesignSystemCall, Result, ResultDetails } from '../../eds_actions';
+import { thisExtensionName } from '../../analytics';
 
 // Calculated expected length of an API result, with/without summary
 function expectedLength(result: Result, summary: boolean): number {
@@ -44,7 +45,7 @@ suite('Taxi for Email Validation Extension Test Suite', () => {
 		const ed = await vscode.window.showTextDocument(doc);
 
 		// Set up the Extension Context for persistent storage etc
-		const ext = vscode.extensions.getExtension("tuck1s.taxi-for-email-validate-upload");
+		const ext = vscode.extensions.getExtension(thisExtensionName);
 		if (ext) {
 			context = await ext.activate();
 		}

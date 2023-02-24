@@ -1,11 +1,14 @@
 import axios from 'axios';
 import * as manifest from 'vscode-read-manifest';
 
+// This MUST match the package.json publisher.name
+export const thisExtensionName = 'tuck1s.taxi-for-email-validator';
+
 export function userAgent() {
     var mft: {
         name?: string,
         version?: string
-    } = manifest.readManifestSync('tuck1s.taxi-for-email-validate-upload');
+    } = manifest.readManifestSync(thisExtensionName);
     return `${mft.name}/${mft.version}`;
 }
 
